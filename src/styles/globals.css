@@ -1,0 +1,382 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@config "../../tailwind.config.ts";
+
+:root {
+  color-scheme: dark;
+  font-family: "Plus Jakarta Sans", var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  background: #04020A;
+  color: #e2e1ef;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background-color: #04020A;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: transparent !important;
+  color: #e2e1ef;
+  overflow-x: hidden;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.container {
+  width: min(100%, 1280px);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-inline: 2rem;
+  }
+}
+
+/* Reference Card Styling */
+.reference-card {
+  background: rgba(18, 10, 34, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(255, 75, 145, 0.25);
+  box-shadow: 
+    0 12px 40px -10px rgba(0, 0, 0, 0.85),
+    0 0 25px -5px rgba(255, 75, 145, 0.25), /* Pink outer glow */
+    inset 0 0 25px rgba(139, 92, 246, 0.25); /* Purple inner glow */
+  border-radius: 26px;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reference-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(255, 75, 145, 0.5);
+  box-shadow: 
+    0 25px 60px -15px rgba(0, 0, 0, 0.95),
+    0 0 40px rgba(255, 75, 145, 0.5), /* Brighter pink outer glow on hover */
+    inset 0 0 35px rgba(139, 92, 246, 0.4); /* Brighter purple inner glow */
+}
+
+/* Hero Box Reference Card */
+.hero-reference-card {
+  background: rgba(18, 10, 34, 0.82);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1.5px solid rgba(255, 75, 145, 0.35);
+  box-shadow: 
+    0 30px 100px -20px rgba(0, 0, 0, 0.95),
+    0 0 45px rgba(255, 75, 145, 0.25), /* soft pink glow */
+    inset 0 0 35px rgba(139, 92, 246, 0.35); /* purple inner glow */
+  border-radius: 28px;
+}
+
+/* Button Styling */
+.btn-pink-gradient {
+  background: linear-gradient(135deg, #ff4b91 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 0 25px rgba(255, 75, 145, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-pink-gradient:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 45px rgba(255, 75, 145, 0.8), 0 0 25px rgba(139, 92, 246, 0.55);
+}
+
+/* 3D Holographic Cube styles */
+.cube-scene {
+  perspective: 800px;
+}
+
+.cube-container {
+  width: 180px;
+  height: 180px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: rotateCube 15s linear infinite;
+}
+
+.cube-face {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgba(255, 75, 145, 0.8); /* pink holographic edges */
+  background: rgba(18, 10, 34, 0.1);
+  box-shadow: 
+    0 0 20px rgba(139, 92, 246, 0.3), /* purple bloom */
+    inset 0 0 15px rgba(255, 75, 145, 0.2);
+}
+
+/* Cube faces position mapping */
+.cube-face-front  { transform: rotateY(  0deg) translateZ(90px); }
+.cube-face-back   { transform: rotateY(180deg) translateZ(90px); }
+.cube-face-right  { transform: rotateY( 90deg) translateZ(90px); }
+.cube-face-left   { transform: rotateY(-90deg) translateZ(90px); }
+.cube-face-top    { transform: rotateX( 90deg) translateZ(90px); }
+.cube-face-bottom { transform: rotateX(-90deg) translateZ(90px); }
+
+
+@keyframes rotateCube {
+  0% { transform: rotateX(-20deg) rotateY(0deg); }
+  100% { transform: rotateX(-20deg) rotateY(360deg); }
+}
+
+/* Hologram light rays */
+.light-ray {
+  background: linear-gradient(to top, transparent, rgba(139, 92, 246, 0.2), transparent);
+  mix-blend-mode: screen;
+}
+
+/* Orbiting floating badges slow animation */
+@keyframes slow-orbit {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.orbit-badge-slow {
+  animation: slow-orbit 8s ease-in-out infinite;
+}
+
+
+/* Text shine & gradients */
+.text-gradient-cosmic {
+  background: linear-gradient(to right, #ff4b91, #a855f7, #8b5cf6, #ec4899);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShine 6s linear infinite;
+}
+
+@keyframes textShine {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Dotted connection line */
+.dotted-connector {
+  background-image: radial-gradient(rgba(255, 75, 145, 0.25) 1.5px, transparent 0);
+  background-size: 8px 8px;
+  animation: slideConnector 12s linear infinite;
+}
+
+@keyframes slideConnector {
+  from { background-position: 0 0; }
+  to { background-position: 40px 0; }
+}
+
+/* Roadmap line animation */
+.roadmap-line-path {
+  stroke-dasharray: 6 6;
+  animation: flowRoadmapLine 1.5s linear infinite;
+}
+
+@keyframes flowRoadmapLine {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+/* Floating dust particles keyframe */
+@keyframes float-dust {
+  0% { transform: translateY(0px) translateX(0px); opacity: 0.2; }
+  50% { transform: translateY(-20px) translateX(10px); opacity: 0.7; }
+  100% { transform: translateY(-40px) translateX(0px); opacity: 0; }
+}
+
+.dust-particle {
+  animation: float-dust 8s ease-in-out infinite;
+}
+
+/* Hero Border Bounding glow breathing */
+@keyframes border-glow-breathe {
+  0%, 100% {
+    border-color: rgba(255, 75, 145, 0.22);
+    box-shadow: 
+      0 10px 45px -10px rgba(0, 0, 0, 0.9),
+      0 0 20px -5px rgba(255, 75, 145, 0.18),
+      inset 0 0 20px rgba(139, 92, 246, 0.2);
+  }
+  50% {
+    border-color: rgba(255, 75, 145, 0.38);
+    box-shadow: 
+      0 15px 50px -10px rgba(0, 0, 0, 0.92),
+      0 0 35px 5px rgba(255, 75, 145, 0.35),
+      inset 0 0 30px rgba(139, 92, 246, 0.35);
+  }
+}
+
+.hero-box-glow {
+  animation: border-glow-breathe 6s ease-in-out infinite;
+}
+
+
+/* Soft pulse */
+@keyframes soft-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 20px rgba(255, 75, 145, 0.4));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 35px rgba(255, 75, 145, 0.7));
+  }
+}
+.pulse-glow {
+  animation: soft-pulse 4s ease-in-out infinite;
+}
+
+/* Fade-In on Scroll & Staggered Reveal */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Image Hover Zoom */
+.hover-zoom-img {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-zoom-img:hover {
+  transform: scale(1.06);
+}
+
+.icon-box-glowing {
+  background: rgba(18, 10, 34, 0.9);
+  border: 1px solid rgba(255, 75, 145, 0.35);
+  box-shadow: 
+    0 0 15px rgba(255, 75, 145, 0.25),
+    inset 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
+/* Glassmorphic Core Styling */
+.glass-panel {
+    background: rgba(20, 16, 45, 0.28);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Interactive Hover Lift & Glow */
+.interactive-card {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.interactive-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 75, 145, 0.35);
+    box-shadow: 0 15px 35px rgba(168, 85, 247, 0.25);
+}
+
+/* Fade Up & Staggered Reveal Configuration */
+.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(25px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-on-scroll.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Soft Glow Pulse for central Heart Cube */
+@keyframes pulseBreathing {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 20px rgba(255, 75, 145, 0.5));
+    }
+    50% {
+        transform: scale(1.03);
+        filter: drop-shadow(0 0 35px rgba(255, 75, 145, 0.85));
+    }
+}
+.animate-cosmic-heart {
+    animation: pulseBreathing 4s ease-in-out infinite;
+}
+
+/* Floating Animation for Polaroid Assets */
+@keyframes subtleFloat {
+    0%, 100% { transform: translateY(0px) rotate(var(--tw-rotate, 0deg)); }
+    50% { transform: translateY(-10px) rotate(var(--tw-rotate, 0deg)); }
+}
+.polaroid-float {
+    animation: subtleFloat 6s ease-in-out infinite;
+}
+
+/* Orbiting elements around the primary block */
+@keyframes completeOrbit {
+    0% { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+}
+.orbit-node {
+    position: absolute;
+    animation: completeOrbit 25s linear infinite;
+}
+
+/* Premium GalaxyBackground Animations */
+@keyframes nebulaDrift1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.08); }
+}
+
+@keyframes nebulaDrift2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-50px, -30px) scale(0.92); }
+}
+
+@keyframes nebulaDrift3 {
+  0%, 100% { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+  50% { transform: translate(40px, -40px) rotate(180deg) scale(1.05); }
+}
+
+.animate-nebula-slow-1 {
+  animation: nebulaDrift1 30s ease-in-out infinite;
+}
+
+.animate-nebula-slow-2 {
+  animation: nebulaDrift2 35s ease-in-out infinite;
+}
+
+.animate-nebula-slow-3 {
+  animation: nebulaDrift3 40s ease-in-out infinite;
+}
+
+/* Hide duplicate canvas backgrounds from page.tsx */
+main > canvas,
+.fixed.inset-0.-z-10.pointer-events-none,
+canvas.pointer-events-none {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Make main page background transparent to reveal the global GalaxyBackground */
+main {
+  background-color: transparent !important;
+  background: transparent !important;
+}
