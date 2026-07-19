@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Save, Trash2, Plus, Sparkles } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
+import { useStoryBook } from '@/context/StoryBookContext'
 
 interface Toast {
   id: number
@@ -12,7 +13,8 @@ interface Toast {
 }
 
 export default function BottomActionBar() {
-  const { saveDraft, resetDraft, triggerSaveMemory, draftSaved } = useMemory()
+  const { draft, saveDraft, resetDraft, triggerSaveMemory, draftSaved } = useMemory()
+  const { addChapter } = useStoryBook()
   const [showDiscard, setShowDiscard] = useState(false)
   const [showAddAnother, setShowAddAnother] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -41,6 +43,26 @@ export default function BottomActionBar() {
     setShowAddAnother(false)
     showToast('Ready for New Memory', '✨')
   }, [resetDraft, showToast])
+
+  const handleSaveMemory = useCallback(() => {
+    addChapter({
+      title: draft.title,
+      description: draft.description,
+      memoryType: draft.selectedMemoryType,
+      uploadedFileName: draft.uploadedFileName,
+      date: draft.date,
+      location: draft.location,
+      mood: draft.mood,
+      weather: draft.weather,
+      people: draft.people,
+      category: draft.category,
+      tags: draft.tags,
+      visibility: draft.visibility,
+      favorite: draft.favorite,
+    })
+    triggerSaveMemory()
+    showToast('Memory Saved to StoryBook ✨', '📖')
+  }, [draft, addChapter, triggerSaveMemory, showToast])
 
   return (
     <>
@@ -98,7 +120,7 @@ export default function BottomActionBar() {
 
         {/* Save Memory */}
         <motion.button
-          onClick={triggerSaveMemory}
+          onClick={handleSaveMemory}
           className="relative px-7 py-2.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-neonPink to-neonPurple shadow-[0_4px_20px_rgba(255,75,145,0.45),0_0_40px_rgba(168,85,247,0.15),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-md overflow-hidden group"
           whileHover={{ scale: 1.03, y: -2, boxShadow: '0 8px 40px rgba(255,75,145,0.6), 0 0 60px rgba(168,85,247,0.25), inset 0 1px 0 rgba(255,255,255,0.15)' }}
           whileTap={{ scale: 0.97 }}
