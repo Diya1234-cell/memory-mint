@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Heart } from 'lucide-react'
 
@@ -29,6 +29,11 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [galaxyHovered, setGalaxyHovered] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const activeGlow = themeGlows[themeColor] || themeGlows.pink
 
@@ -116,8 +121,8 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
       {/* L1: Deep space */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#120a28_0%,#04020a_100%)] pointer-events-none -z-30" />
 
-      {/* L2: Distant twinkling stars */}
-      {bgStars.map((s, i) => (
+      {/* L2: Distant twinkling stars — client-only to avoid SSR hydration mismatch */}
+      {isMounted && bgStars.map((s, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full bg-white pointer-events-none -z-20"
@@ -278,8 +283,8 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
         </motion.div>
       ))}
 
-      {/* L10: Front drifting particles */}
-      {frontParticles.map((p, i) => (
+      {/* L10: Front drifting particles — client-only to avoid SSR hydration mismatch */}
+      {isMounted && frontParticles.map((p, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full pointer-events-none z-30"
