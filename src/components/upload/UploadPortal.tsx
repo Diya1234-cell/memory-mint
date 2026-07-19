@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, Sparkles, Check } from 'lucide-react'
+import { Upload, Sparkles, Check, Image, Film, Music, FileText } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
 
 function lcg(seed: number): () => number {
@@ -27,12 +27,14 @@ const orbitRings = [
 ]
 
 export default function UploadPortal() {
-  const { setField } = useMemory()
+  const { setField, triggerSaveMemory } = useMemory()
   const [isHovered, setIsHovered] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'complete'>('idle')
   const [progress, setProgress] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -88,6 +90,7 @@ export default function UploadPortal() {
   }, [])
 
   useEffect(() => {
+    setIsMounted(true)
     return cleanupInterval
   }, [cleanupInterval])
 
@@ -110,6 +113,13 @@ export default function UploadPortal() {
     if (!file) return
     setSelectedFile(file)
     setField('uploadedFileName', file.name)
+    // Generate preview URL for images
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    } else {
+      setPreviewUrl(null)
+    }
     simulateUpload()
   }, [simulateUpload, setField])
 
@@ -141,6 +151,7 @@ export default function UploadPortal() {
     setUploadState('idle')
     setProgress(0)
     setSelectedFile(null)
+    setPreviewUrl(null)
     setField('uploadedFileName', null)
     cleanupInterval()
   }, [cleanupInterval, setField])
@@ -161,33 +172,33 @@ export default function UploadPortal() {
       {/* ─── Nebula Background ─── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
-          className="absolute -top-20 -left-20 w-[300px] h-[300px] rounded-full opacity-40"
+          className="absolute -top-20 -left-20 w-[300px] h-[300px] rounded-full opacity-12"
           style={{
-            background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)',
             filter: 'blur(50px)',
             animation: 'nebulaDrift1 35s ease-in-out infinite',
           }}
         />
         <div
-          className="absolute -bottom-16 -right-16 w-[280px] h-[280px] rounded-full opacity-35"
+          className="absolute -bottom-16 -right-16 w-[280px] h-[280px] rounded-full opacity-10"
           style={{
-            background: 'radial-gradient(circle, rgba(255,75,145,0.25) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255,75,145,0.12) 0%, transparent 70%)',
             filter: 'blur(45px)',
             animation: 'nebulaDrift2 40s ease-in-out infinite',
           }}
         />
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full opacity-20"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full opacity-6"
           style={{
-            background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)',
             filter: 'blur(55px)',
             animation: 'nebulaDrift3 45s ease-in-out infinite',
           }}
         />
       </div>
 
-      {/* ─── Twinkling Stars ─── */}
-      {starData.map((s, i) => (
+      {/* ─── Twinkling Stars — client-only ─── */}
+      {isMounted && starData.map((s, i) => (
         <motion.div
           key={`star-${i}`}
           className="absolute rounded-full bg-white pointer-events-none"
@@ -198,7 +209,7 @@ export default function UploadPortal() {
             height: s.size,
           }}
           animate={{
-            opacity: [0.15, 0.8, 0.15],
+            opacity: [0.1, 0.6, 0.1],
             scale: [0.8, 1.3, 0.8],
           }}
           transition={{
@@ -210,8 +221,8 @@ export default function UploadPortal() {
         />
       ))}
 
-      {/* ─── Floating Particles ─── */}
-      {particleData.map((p, i) => (
+      {/* ─── Floating Particles — client-only ─── */}
+      {isMounted && particleData.map((p, i) => (
         <motion.div
           key={`particle-${i}`}
           className="absolute rounded-full pointer-events-none"
@@ -221,14 +232,14 @@ export default function UploadPortal() {
             width: p.size,
             height: p.size,
             background: i % 3 === 0
-              ? 'rgba(168,85,247,0.4)'
+              ? 'rgba(168,85,247,0.25)'
               : i % 3 === 1
-              ? 'rgba(255,75,145,0.35)'
-              : 'rgba(99,102,241,0.3)',
+              ? 'rgba(255,75,145,0.2)'
+              : 'rgba(99,102,241,0.2)',
           }}
           animate={{
             y: [0, -15, 0],
-            opacity: [0, 0.7, 0],
+            opacity: [0, 0.5, 0],
           }}
           transition={{
             duration: p.dur,
@@ -325,14 +336,14 @@ export default function UploadPortal() {
           className="absolute inset-0 rounded-full"
           style={{
             background: `conic-gradient(from 0deg, 
-              rgba(168,85,247,0.2) 0deg, 
-              rgba(255,105,180,0.25) 90deg, 
-              rgba(168,85,247,0.2) 180deg, 
-              rgba(130,70,255,0.25) 270deg, 
-              rgba(168,85,247,0.2) 360deg)`,
+              rgba(168,85,247,0.12) 0deg, 
+              rgba(255,105,180,0.14) 90deg, 
+              rgba(168,85,247,0.12) 180deg, 
+              rgba(130,70,255,0.14) 270deg, 
+              rgba(168,85,247,0.12) 360deg)`,
             maskImage: 'radial-gradient(circle at center, black 50%, transparent 75%)',
             WebkitMaskImage: 'radial-gradient(circle at center, black 50%, transparent 75%)',
-            boxShadow: `0 0 ${isHovered ? 80 : 50}px rgba(168,85,247,${glowIntensity + 0.2})`,
+            boxShadow: `0 0 ${isHovered ? 80 : 50}px rgba(168,85,247,${Math.max(glowIntensity + 0.05,0.12)})`,
           }}
           animate={{ rotate: 360 }}
           transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
@@ -342,7 +353,7 @@ export default function UploadPortal() {
         <motion.div
           className="absolute inset-[-20px] rounded-full pointer-events-none"
           style={{
-            background: `radial-gradient(circle at center, rgba(168,85,247,${(glowIntensity + 0.1) * 0.35}) 30%, transparent 70%)`,
+            background: `radial-gradient(circle at center, rgba(168,85,247,${(glowIntensity + 0.1) * 0.22}) 30%, transparent 70%)`,
             filter: 'blur(25px)',
           }}
           animate={{
@@ -391,17 +402,17 @@ export default function UploadPortal() {
           {/* Energy portal glass surface — Apple Vision Pro crystal glass */}
           <div
             className="absolute inset-0 rounded-full transition-all duration-250 ease-out"
-            style={{
-              background: `
-                radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 40%),
-                radial-gradient(circle at center, rgba(168,100,255,0.06) 0%, rgba(168,100,255,0.03) 50%, transparent 80%),
-                radial-gradient(circle at center, rgba(255,255,255,0.015) 0%, transparent 60%)
-              `,
-              backdropFilter: 'blur(28px)',
-              WebkitBackdropFilter: 'blur(28px)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              boxShadow: '0 0 60px rgba(168,100,255,0.08), 0 0 100px rgba(200,130,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.1)',
-            }}
+              style={{
+                background: `
+                  radial-gradient(circle at center, rgba(255,255,255,0.02) 0%, transparent 40%),
+                  radial-gradient(circle at center, rgba(168,100,255,0.035) 0%, rgba(168,100,255,0.02) 50%, transparent 80%),
+                  radial-gradient(circle at center, rgba(255,255,255,0.008) 0%, transparent 60%)
+                `,
+                backdropFilter: 'blur(28px)',
+                WebkitBackdropFilter: 'blur(28px)',
+                border: '1px solid rgba(255,255,255,0.03)',
+                boxShadow: '0 0 40px rgba(168,100,255,0.06), 0 0 80px rgba(200,130,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.08)',
+              }}
             onMouseEnter={(e) => {
               const target = e.currentTarget as HTMLElement
               target.style.background = `
@@ -424,9 +435,9 @@ export default function UploadPortal() {
 
           {/* Faint rotating nebula texture inside the portal */}
           <motion.div
-            className="absolute inset-0 rounded-full pointer-events-none opacity-[0.08]"
+            className="absolute inset-0 rounded-full pointer-events-none opacity-[0.04]"
             style={{
-              background: 'conic-gradient(from 0deg, transparent, rgba(168,85,247,0.025), transparent, rgba(255,105,180,0.015), transparent)',
+              background: 'conic-gradient(from 0deg, transparent, rgba(168,85,247,0.014), transparent, rgba(255,105,180,0.008), transparent)',
             }}
             animate={{ rotate: 360 }}
             transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
@@ -434,9 +445,9 @@ export default function UploadPortal() {
 
           {/* Secondary nebula swirl */}
           <motion.div
-            className="absolute inset-[10%] rounded-full pointer-events-none opacity-[0.04]"
+            className="absolute inset-[10%] rounded-full pointer-events-none opacity-[0.02]"
             style={{
-              background: 'conic-gradient(from 0deg, rgba(130,70,255,0.015), transparent, rgba(255,75,145,0.01), transparent, rgba(130,70,255,0.015))',
+              background: 'conic-gradient(from 0deg, rgba(130,70,255,0.008), transparent, rgba(255,75,145,0.006), transparent, rgba(130,70,255,0.008))',
             }}
             animate={{ rotate: -360 }}
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
@@ -446,7 +457,7 @@ export default function UploadPortal() {
           <motion.div
             className="absolute inset-[15%] rounded-full pointer-events-none border"
             style={{
-              borderColor: 'rgba(168,85,247,0.03)',
+              borderColor: 'rgba(168,85,247,0.015)',
             }}
             animate={{
               scale: [1, 1.08, 1],
@@ -459,7 +470,7 @@ export default function UploadPortal() {
           <motion.div
             className="absolute inset-[30%] rounded-full pointer-events-none border"
             style={{
-              borderColor: 'rgba(255,105,180,0.02)',
+              borderColor: 'rgba(255,105,180,0.01)',
             }}
             animate={{
               scale: [1, 1.12, 1],
@@ -506,7 +517,7 @@ export default function UploadPortal() {
               style={{
                 left: `${d.x}%`, top: `${d.y}%`,
                 width: d.s, height: d.s,
-                background: i % 2 === 0 ? 'rgba(168,85,247,0.04)' : 'rgba(255,105,180,0.03)',
+                background: i % 2 === 0 ? 'rgba(168,85,247,0.02)' : 'rgba(255,105,180,0.015)',
               }}
               animate={{
                 y: [0, -8, 0],
@@ -531,7 +542,7 @@ export default function UploadPortal() {
               }}
               style={{
                 inset: `${70 + r * 25}px`,
-                borderColor: `rgba(168,85,247,${0.02 + r * 0.01})`,
+                borderColor: `rgba(168,85,247,${0.01 + r * 0.005})`,
               }}
             />
           ))}
@@ -540,7 +551,7 @@ export default function UploadPortal() {
           <motion.div
             className="absolute inset-0 rounded-full pointer-events-none"
             style={{
-              background: 'linear-gradient(135deg, transparent 25%, rgba(255,255,255,0.015) 45%, transparent 65%)',
+              background: 'linear-gradient(135deg, transparent 25%, rgba(255,255,255,0.008) 45%, transparent 65%)',
             }}
             animate={{
               backgroundPosition: ['0% 0%', '200% 200%'],
@@ -577,18 +588,37 @@ export default function UploadPortal() {
                   {/* Text */}
                   <div className="space-y-1">
                     <p className="text-white/90 text-sm font-medium leading-relaxed">
-                      Drag photos, videos, voice notes, journal entries
+                      Drop your memory here
                     </p>
-                    <p className="text-white/50 text-xs">
-                      or click to upload
+                    <p className="text-white/40 text-xs">
+                      Photos, videos, audio or journal entries
                     </p>
                   </div>
 
-                  {/* Browse Button - enhanced glow */}
+                  {/* File type chips */}
+                  <div className="flex flex-wrap gap-2 justify-center max-w-[220px]">
+                    {[
+                      { icon: Image, label: 'Image', color: 'rgba(255,75,145,0.08)', border: 'rgba(255,75,145,0.18)' },
+                      { icon: Film, label: 'Video', color: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.18)' },
+                      { icon: Music, label: 'Audio', color: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.18)' },
+                      { icon: FileText, label: 'Journal', color: 'rgba(6,182,212,0.08)', border: 'rgba(6,182,212,0.18)' },
+                    ].map(({ icon: Icon, label, color, border }) => (
+                      <div
+                        key={label}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold text-white/60"
+                        style={{ background: color, border: `1px solid ${border}` }}
+                      >
+                        <Icon className="w-2.5 h-2.5" />
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Browse Button */}
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    className="mt-2 px-8 py-3 rounded-full text-sm font-semibold text-white border border-white/20 bg-gradient-to-r from-neonPink/35 to-neonPurple/35 backdrop-blur-md shadow-[0_0_30px_rgba(255,75,145,0.35),0_0_60px_rgba(168,85,247,0.15)] hover:shadow-[0_0_50px_rgba(255,75,145,0.55),0_0_80px_rgba(168,85,247,0.25)] transition-all duration-300"
+                    className="mt-2 px-8 py-3 rounded-full text-sm font-semibold text-white border border-white/14 bg-gradient-to-r from-neonPink/15 to-neonPurple/15 backdrop-blur-md shadow-[0_0_16px_rgba(255,75,145,0.16)] hover:shadow-[0_0_26px_rgba(255,75,145,0.28)] transition-all duration-300"
                     onClick={(e) => { e.stopPropagation(); handleBrowse() }}
                   >
                     Browse Files
@@ -610,7 +640,7 @@ export default function UploadPortal() {
                       <circle
                         cx="60" cy="60" r="52"
                         fill="none"
-                        stroke="rgba(255,255,255,0.08)"
+                        stroke="rgba(255,255,255,0.04)"
                         strokeWidth="4"
                       />
                       <motion.circle
@@ -657,28 +687,43 @@ export default function UploadPortal() {
                   key="complete"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center gap-3"
+                  className="flex flex-col items-center gap-3 w-full px-6"
                 >
                   {/* Flash effect */}
                   <motion.div
                     className="absolute inset-0 rounded-full pointer-events-none"
                     style={{
-                      background: 'radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 60%)',
+                      background: 'radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 60%)',
                     }}
                     initial={{ opacity: 1 }}
                     animate={{ opacity: 0 }}
                     transition={{ duration: 0.8 }}
                   />
 
-                  {/* Checkmark */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
-                    className="w-16 h-16 rounded-full bg-gradient-to-r from-neonPink to-neonPurple flex items-center justify-center shadow-[0_0_30px_rgba(255,75,145,0.5)]"
-                  >
-                    <Check className="w-8 h-8 text-white" strokeWidth={3} />
-                  </motion.div>
+                  {/* Live image preview OR file icon */}
+                  {previewUrl ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.15 }}
+                      className="relative w-40 h-40 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_20px_rgba(168,85,247,0.12)]"
+                    >
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      {/* Success overlay badge */}
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gradient-to-r from-neonPink to-neonPurple flex items-center justify-center shadow-[0_0_12px_rgba(255,75,145,0.6)]">
+                        <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+                      className="w-16 h-16 rounded-full bg-gradient-to-r from-neonPink to-neonPurple flex items-center justify-center shadow-[0_0_22px_rgba(255,75,145,0.28)]"
+                    >
+                      <Check className="w-8 h-8 text-white" strokeWidth={3} />
+                    </motion.div>
+                  )}
 
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -686,24 +731,46 @@ export default function UploadPortal() {
                     transition={{ delay: 0.5 }}
                     className="text-center"
                   >
-                    <p className="text-white font-bold text-sm flex items-center gap-1.5">
+                    <p className="text-white font-bold text-sm flex items-center gap-1.5 justify-center">
                       <Sparkles className="w-4 h-4 text-neonPink" />
                       Memory Ready
                     </p>
                     <p className="text-gray-400 text-[10px] mt-1 font-medium max-w-[200px] truncate">
                       {selectedFile?.name}
                     </p>
+                    <p className="text-gray-600 text-[9px] mt-0.5">
+                      {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
+                    </p>
                   </motion.div>
 
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    onClick={(e) => { e.stopPropagation(); resetPortal() }}
-                    className="mt-2 px-5 py-1.5 rounded-full text-[10px] font-semibold text-gray-400 border border-white/10 hover:text-white hover:border-white/20 transition-all duration-300"
-                  >
-                    Upload Another
-                  </motion.button>
+                  <div className="flex gap-2 mt-1">
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.8 }}
+                      onClick={(e) => { e.stopPropagation(); resetPortal() }}
+                      className="px-4 py-1.5 rounded-full text-[10px] font-semibold text-gray-400 border border-white/10 hover:text-white hover:border-white/20 transition-all duration-300"
+                    >
+                      Upload Another
+                    </motion.button>
+
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.85 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (selectedFile) {
+                          const title = selectedFile.name.replace(/\.[^/.]+$/, '')
+                          setField('title', title)
+                          triggerSaveMemory()
+                        }
+                      }}
+                      className="px-4 py-1.5 rounded-full text-[10px] font-semibold text-white bg-gradient-to-r from-neonPink/20 to-neonPurple/20 border border-transparent shadow-[0_0_18px_rgba(168,85,247,0.12)] hover:brightness-105 transition-all duration-200"
+                    >
+                      Save Memory
+                    </motion.button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -718,7 +785,7 @@ export default function UploadPortal() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 rounded-full z-20 flex items-center justify-center"
                 style={{
-                  background: 'radial-gradient(circle at center, rgba(168,85,247,0.06) 0%, rgba(255,75,145,0.03) 50%, transparent 70%)',
+                  background: 'radial-gradient(circle at center, rgba(168,85,247,0.035) 0%, rgba(255,75,145,0.02) 50%, transparent 70%)',
                   backdropFilter: 'blur(4px)',
                 }}
               >

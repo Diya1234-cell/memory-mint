@@ -147,9 +147,16 @@ export default function UploadPage() {
             {/* ─── Upload + Preview ─── */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               <motion.div variants={fadeUp} className="lg:col-span-5">
-                <div className="rounded-3xl p-8 flex items-center justify-center min-h-[500px] relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 8px 32px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.04)_0%,transparent_70%)] pointer-events-none" />
-                  <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/[0.02] pointer-events-none" />
+                <div
+                  className="rounded-3xl p-8 flex items-center justify-center min-h-[500px] relative overflow-hidden"
+                  style={{
+                    background: 'rgba(255,255,255,0.01)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    boxShadow: '0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03)'
+                  }}>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.03)_0%,transparent_70%)] pointer-events-none" />
                   <UploadPortal />
                 </div>
               </motion.div>
