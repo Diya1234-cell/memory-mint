@@ -404,32 +404,32 @@ export default function UploadPortal() {
             className="absolute inset-0 rounded-full transition-all duration-250 ease-out"
               style={{
                 background: `
-                  radial-gradient(circle at center, rgba(255,255,255,0.02) 0%, transparent 40%),
-                  radial-gradient(circle at center, rgba(168,100,255,0.035) 0%, rgba(168,100,255,0.02) 50%, transparent 80%),
-                  radial-gradient(circle at center, rgba(255,255,255,0.008) 0%, transparent 60%)
+                  radial-gradient(circle at center, rgba(255,255,255,0.01) 0%, transparent 40%),
+                  radial-gradient(circle at center, rgba(168,100,255,0.02) 0%, rgba(168,100,255,0.01) 50%, transparent 80%),
+                  radial-gradient(circle at center, rgba(255,255,255,0.004) 0%, transparent 60%)
                 `,
                 backdropFilter: 'blur(28px)',
                 WebkitBackdropFilter: 'blur(28px)',
-                border: '1px solid rgba(255,255,255,0.03)',
-                boxShadow: '0 0 40px rgba(168,100,255,0.06), 0 0 80px rgba(200,130,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.08)',
+                border: '1px solid rgba(255,255,255,0.02)',
+                boxShadow: '0 0 40px rgba(168,100,255,0.03), 0 0 80px rgba(200,130,255,0.015), inset 0 1px 0 rgba(255,255,255,0.02), inset 0 -1px 0 rgba(0,0,0,0.04)',
               }}
             onMouseEnter={(e) => {
               const target = e.currentTarget as HTMLElement
               target.style.background = `
-                radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 40%),
-                radial-gradient(circle at center, rgba(168,100,255,0.09) 0%, rgba(168,100,255,0.05) 50%, transparent 80%),
-                radial-gradient(circle at center, rgba(255,255,255,0.025) 0%, transparent 60%)
+                radial-gradient(circle at center, rgba(255,255,255,0.025) 0%, transparent 40%),
+                radial-gradient(circle at center, rgba(168,100,255,0.045) 0%, rgba(168,100,255,0.025) 50%, transparent 80%),
+                radial-gradient(circle at center, rgba(255,255,255,0.0125) 0%, transparent 60%)
               `
-              target.style.boxShadow = '0 0 80px rgba(168,100,255,0.12), 0 0 140px rgba(200,130,255,0.06), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.1)'
+              target.style.boxShadow = '0 0 80px rgba(168,100,255,0.06), 0 0 140px rgba(200,130,255,0.03), inset 0 1px 0 rgba(255,255,255,0.045), inset 0 -1px 0 rgba(0,0,0,0.05)'
             }}
             onMouseLeave={(e) => {
               const target = e.currentTarget as HTMLElement
               target.style.background = `
-                radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 40%),
-                radial-gradient(circle at center, rgba(168,100,255,0.06) 0%, rgba(168,100,255,0.03) 50%, transparent 80%),
-                radial-gradient(circle at center, rgba(255,255,255,0.015) 0%, transparent 60%)
+                radial-gradient(circle at center, rgba(255,255,255,0.015) 0%, transparent 40%),
+                radial-gradient(circle at center, rgba(168,100,255,0.03) 0%, rgba(168,100,255,0.015) 50%, transparent 80%),
+                radial-gradient(circle at center, rgba(255,255,255,0.0075) 0%, transparent 60%)
               `
-              target.style.boxShadow = '0 0 60px rgba(168,100,255,0.08), 0 0 100px rgba(200,130,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.1)'
+              target.style.boxShadow = '0 0 60px rgba(168,100,255,0.04), 0 0 100px rgba(200,130,255,0.02), inset 0 1px 0 rgba(255,255,255,0.03), inset 0 -1px 0 rgba(0,0,0,0.05)'
             }}
           />
 
