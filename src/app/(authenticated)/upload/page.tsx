@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, Variants } from 'framer-motion'
 import { MemoryProvider } from '@/context/MemoryContext'
 import TopNav from '@/components/upload/TopNav'
 import MemoryTypeSelector from '@/components/upload/MemoryTypeSelector'
@@ -18,7 +18,7 @@ function lcg(seed: number) {
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 }
 }
 
-const stagger = {
+const stagger: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -26,7 +26,7 @@ const stagger = {
   },
 }
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,

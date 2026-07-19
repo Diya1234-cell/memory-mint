@@ -26,12 +26,25 @@ import { motion } from 'framer-motion'
 
 import { useSpaceData } from '@/hooks/useSpaceData'
 import { MemoryGalaxy } from '@/components/ui/MemoryGalaxy'
+import AIPulseModal from '@/components/ui/AIPulseModal'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const { spaceData } = useSpaceData()
   const activeSpace = spaceData.spaceName
+
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
+
+  const handleStartScan = () => {
+    if (isScanning) return
+    setIsScanning(true)
+    setTimeout(() => {
+      setIsScanning(false)
+      setIsAiModalOpen(true)
+    }, 2800)
+  }
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget
@@ -1145,9 +1158,19 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Animated Heartbeat EKG wave */}
-                <div className="w-full relative h-8 mt-4 flex items-center justify-center">
+                <div className="w-full relative h-8 mt-4 flex items-center justify-center overflow-hidden">
+                  {/* Laser Scan Sweep Line */}
+                  {isScanning && (
+                    <motion.div
+                      animate={{ y: [-15, 15, -15] }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-current to-transparent blur-[1px] opacity-90 pointer-events-none"
+                      style={{ color: activeTheme.color }}
+                    />
+                  )}
+
                   {/* Pulse path SVG */}
-                  <svg viewBox="0 0 200 30" className={`w-full h-full opacity-65 ${activeTheme.text}`}>
+                  <svg viewBox="0 0 200 30" className={`w-full h-full opacity-65 ${activeTheme.text} ${isScanning ? 'animate-pulse scale-y-125 duration-300' : ''}`}>
                     <path
                       d="M 10 15 H 70 L 75 5 L 80 25 L 85 15 H 90"
                       fill="none"
@@ -1166,12 +1189,36 @@ export default function DashboardPage() {
                     />
                   </svg>
                   
-                  {/* Centered pulsing Heart */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Heart className={`w-4 h-4 fill-current animate-ping opacity-65 absolute ${activeTheme.text}`} />
-                    <Heart className={`w-4 h-4 fill-current relative z-10 ${activeTheme.text} ${activeTheme.glowHeart}`} />
-                  </div>
+                  {/* Centered pulsing Heart as button */}
+                  <button 
+                    onClick={handleStartScan}
+                    disabled={isScanning}
+                    className="absolute inset-0 flex items-center justify-center cursor-pointer group/heart active:scale-95 transition-transform"
+                    title="Click to scan connection pulse"
+                  >
+                    <Heart className={`w-4 h-4 fill-current opacity-65 absolute ${activeTheme.text} ${
+                      isScanning ? 'animate-[ping_0.5s_infinite] scale-150' : 'animate-ping group-hover/heart:scale-125 transition-transform'
+                    }`} />
+                    <Heart className={`w-4 h-4 fill-current relative z-10 ${activeTheme.text} ${activeTheme.glowHeart} ${
+                      isScanning ? 'animate-pulse scale-110' : 'group-hover/heart:scale-110 transition-transform'
+                    }`} />
+                  </button>
                 </div>
+
+                {/* AI Scan Trigger Button */}
+                <button
+                  onClick={handleStartScan}
+                  disabled={isScanning}
+                  className={`w-full py-2 px-4 rounded-xl border text-[10px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-4 relative overflow-hidden group/btn ${
+                    isScanning 
+                      ? 'bg-white/5 border-white/10 text-gray-500 cursor-not-allowed shadow-none'
+                      : `bg-white/5 border-white/10 hover:border-current hover:bg-[#120a22]/50 text-white shadow-[0_0_15px_rgba(255,255,255,0.02)]`
+                  }`}
+                  style={{ color: !isScanning ? activeTheme.color : undefined }}
+                >
+                  <Sparkles className={`w-3 h-3 ${!isScanning ? 'animate-pulse' : ''}`} />
+                  {isScanning ? 'Syncing pulses...' : 'AI Connection Scan'}
+                </button>
 
               </div>
 
@@ -1311,6 +1358,19 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      <AIPulseModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        spaceData={spaceData}
+        stats={{
+          daysTogether: 842,
+          streak: 143,
+          adventures: 34,
+          milestones: 18,
+        }}
+        activeTheme={activeTheme}
+      />
     </div>
   )
 }

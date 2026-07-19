@@ -254,7 +254,9 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
           style={{
             left: m.left, top: m.top,
             x: mousePos.x * (0.6 + m.delay * 0.05),
-            y: mousePos.y * (0.6 + m.delay * 0.05)
+            y: mousePos.y * (0.6 + m.delay * 0.05),
+            width: m.w,
+            height: m.h
           }}
           animate={{
             y: [0, -(3 + m.delay * 0.5), 3 + m.delay * 0.3, 0],
@@ -264,7 +266,6 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
           transition={{ duration: 9 + m.delay * 1.5, repeat: Infinity, ease: "easeInOut" }}
           whileHover={{ scale: 1.55, zIndex: 50, rotate: 0, y: -12, boxShadow: `0 0 20px ${activeGlow.glow}` }}
           className="absolute bg-[#180a32]/90 p-[2px] pb-[5px] border border-white/[18%] rounded-[3px] shadow-2xl flex-shrink-0 cursor-pointer pointer-events-auto transition-shadow duration-300"
-          style={{ width: m.w, height: m.h }}
         >
           <div className="w-full h-[72%] bg-cover bg-center rounded-[2px] pointer-events-none" style={{ backgroundImage: `url('${m.img}')` }} />
 
