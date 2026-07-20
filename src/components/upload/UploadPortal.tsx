@@ -394,46 +394,40 @@ export default function UploadPortal() {
           transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
         />
 
-        {/* ─── Main Portal Circle (500px) — now transparent glass ─── */}
+        {/* ─── Main Portal Circle (500px) — Premium Glass Lens ─── */}
         <div
           className="relative w-[500px] h-[500px] rounded-full overflow-hidden cursor-pointer"
           onClick={handleBrowse}
         >
-          {/* Energy portal glass surface — Apple Vision Pro crystal glass */}
+          {/* Premium glass surface — MemoryVerse glassmorphism */}
           <div
             className="absolute inset-0 rounded-full transition-all duration-250 ease-out"
               style={{
                 background: `
-                  radial-gradient(circle at center, rgba(255,255,255,0.01) 0%, transparent 40%),
-                  radial-gradient(circle at center, rgba(168,100,255,0.02) 0%, rgba(168,100,255,0.01) 50%, transparent 80%),
-                  radial-gradient(circle at center, rgba(255,255,255,0.004) 0%, transparent 60%)
+                  radial-gradient(circle at center, rgba(255,255,255,0.02) 0%, transparent 40%),
+                  radial-gradient(circle at center, rgba(168,100,255,0.035) 0%, rgba(168,100,255,0.02) 50%, transparent 80%),
+                  radial-gradient(circle at center, rgba(255,255,255,0.008) 0%, transparent 60%)
                 `,
                 backdropFilter: 'blur(28px)',
                 WebkitBackdropFilter: 'blur(28px)',
-                border: '1px solid rgba(255,255,255,0.02)',
-                boxShadow: '0 0 40px rgba(168,100,255,0.03), 0 0 80px rgba(200,130,255,0.015), inset 0 1px 0 rgba(255,255,255,0.02), inset 0 -1px 0 rgba(0,0,0,0.04)',
+                border: '1px solid rgba(255,255,255,0.03)',
+                boxShadow: '0 0 40px rgba(168,100,255,0.06), 0 0 80px rgba(200,130,255,0.03), inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.08)',
               }}
             onMouseEnter={(e) => {
               const target = e.currentTarget as HTMLElement
-              target.style.background = `
-                radial-gradient(circle at center, rgba(255,255,255,0.025) 0%, transparent 40%),
-                radial-gradient(circle at center, rgba(168,100,255,0.045) 0%, rgba(168,100,255,0.025) 50%, transparent 80%),
-                radial-gradient(circle at center, rgba(255,255,255,0.0125) 0%, transparent 60%)
-              `
-              target.style.boxShadow = '0 0 80px rgba(168,100,255,0.06), 0 0 140px rgba(200,130,255,0.03), inset 0 1px 0 rgba(255,255,255,0.045), inset 0 -1px 0 rgba(0,0,0,0.05)'
+              target.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.035) 100%)'
+              target.style.border = '1px solid rgba(255,255,255,0.18)'
+              target.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 0 55px rgba(180,90,255,0.22)'
             }}
             onMouseLeave={(e) => {
               const target = e.currentTarget as HTMLElement
-              target.style.background = `
-                radial-gradient(circle at center, rgba(255,255,255,0.015) 0%, transparent 40%),
-                radial-gradient(circle at center, rgba(168,100,255,0.03) 0%, rgba(168,100,255,0.015) 50%, transparent 80%),
-                radial-gradient(circle at center, rgba(255,255,255,0.0075) 0%, transparent 60%)
-              `
-              target.style.boxShadow = '0 0 60px rgba(168,100,255,0.04), 0 0 100px rgba(200,130,255,0.02), inset 0 1px 0 rgba(255,255,255,0.03), inset 0 -1px 0 rgba(0,0,0,0.05)'
+              target.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)'
+              target.style.border = '1px solid rgba(255,255,255,0.12)'
+              target.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 40px rgba(180,90,255,0.15)'
             }}
           />
 
-          {/* Faint rotating nebula texture inside the portal */}
+          {/* Faint rotating nebula texture inside the portal — subtle MemoryVerse tones */}
           <motion.div
             className="absolute inset-0 rounded-full pointer-events-none opacity-[0.04]"
             style={{
@@ -443,7 +437,7 @@ export default function UploadPortal() {
             transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
           />
 
-          {/* Secondary nebula swirl */}
+          {/* Secondary nebula swirl — subtle */}
           <motion.div
             className="absolute inset-[10%] rounded-full pointer-events-none opacity-[0.02]"
             style={{
@@ -453,7 +447,7 @@ export default function UploadPortal() {
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
           />
 
-          {/* Gentle animated energy ripple */}
+          {/* Gentle animated energy ripple — softer */}
           <motion.div
             className="absolute inset-[15%] rounded-full pointer-events-none border"
             style={{
@@ -461,12 +455,12 @@ export default function UploadPortal() {
             }}
             animate={{
               scale: [1, 1.08, 1],
-              opacity: [0.05, 0.14, 0.05],
+              opacity: [0.04, 0.1, 0.04],
             }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          {/* Second ripple */}
+          {/* Second ripple — even softer */}
           <motion.div
             className="absolute inset-[30%] rounded-full pointer-events-none border"
             style={{
@@ -474,26 +468,26 @@ export default function UploadPortal() {
             }}
             animate={{
               scale: [1, 1.12, 1],
-              opacity: [0.04, 0.1, 0.04],
+              opacity: [0.03, 0.07, 0.03],
             }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
           />
 
-          {/* Soft core glow */}
+          {/* Soft core glow — subtle lavender/violet */}
           <motion.div
             className="absolute inset-[120px] rounded-full pointer-events-none"
             style={{
-              background: 'radial-gradient(circle at center, rgba(160,100,255,0.03) 0%, transparent 70%)',
+              background: 'radial-gradient(circle at center, rgba(160,100,255,0.02) 0%, transparent 70%)',
               filter: 'blur(25px)',
             }}
             animate={{
               scale: [1, 1.1, 1],
-              opacity: [0.08, 0.2, 0.08],
+              opacity: [0.06, 0.15, 0.06],
             }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          {/* Tiny stars within the portal */}
+          {/* Tiny stars within the portal — subtle */}
           {portalStars.map((s, i) => (
             <motion.div
               key={`ps-${i}`}
@@ -502,14 +496,14 @@ export default function UploadPortal() {
                 left: `${s.x}%`, top: `${s.y}%`,
                 width: s.s, height: s.s,
               }}
-              animate={{ opacity: [0.04, 0.25, 0.04], scale: [0.8, 1.2, 0.8] }}
+              animate={{ opacity: [0.03, 0.18, 0.03], scale: [0.8, 1.2, 0.8] }}
               transition={{
                 duration: s.d, repeat: Infinity, delay: s.delay, ease: 'easeInOut',
               }}
             />
           ))}
 
-          {/* Subtle dust inside portal */}
+          {/* Subtle dust inside portal — MemoryVerse tones */}
           {portalDust.map((d, i) => (
             <motion.div
               key={`pd-${i}`}
@@ -521,7 +515,7 @@ export default function UploadPortal() {
               }}
               animate={{
                 y: [0, -8, 0],
-                opacity: [0, 0.08, 0],
+                opacity: [0, 0.05, 0],
               }}
               transition={{
                 duration: d.dur, repeat: Infinity, delay: d.delay, ease: 'easeInOut',
@@ -529,7 +523,7 @@ export default function UploadPortal() {
             />
           ))}
 
-          {/* Inner energy rings */}
+          {/* Inner energy rings — subtle */}
           {[0, 1, 2].map((r) => (
             <motion.div
               key={`energy-${r}`}
@@ -547,7 +541,7 @@ export default function UploadPortal() {
             />
           ))}
 
-          {/* Shimmer effect */}
+          {/* Shimmer effect — subtle glass reflection */}
           <motion.div
             className="absolute inset-0 rounded-full pointer-events-none"
             style={{

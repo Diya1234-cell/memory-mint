@@ -1,603 +1,1446 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Heart, 
-  Sparkles, 
-  BookOpen, 
-  Lock,
-  ArrowRight,
-  Camera,
-  Globe,
-  Activity,
-  Mail,
-  Hourglass,
-  Layout,
-  UserPlus,
-  Image as ImageIcon,
-  Video,
-  Mic,
-  MessageSquare
-} from 'lucide-react'
-import { NebulaShader } from '@/components/ui/spiral-animation'
+import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { Heart, Sparkles, ArrowRight, CheckCircle2, Clock, Star } from 'lucide-react'
 
-function CosmicCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    
-    let starArray: any[] = []
-    let mouseTracker = { x: null as number | null, y: null as number | null }
+import Navbar from '@/features/landing/components/Navbar'
+import HeroSection from '@/features/landing/components/HeroSection'
+import FeatureCards from '@/features/landing/components/FeatureCards'
+import CosmicBackground from '@/features/landing/components/CosmicBackground'
+import AuthModal from '@/features/landing/components/AuthModal'
 
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    window.addEventListener('resize', setCanvasSize)
-    setCanvasSize()
-
-    class CosmicStar {
-      x: number; y: number; radius: number; baseSpeedY: number; driftX: number; alphaBase: number; currentAlpha: number;
-
-      constructor() {
-        this.x = Math.random() * canvas!.width
-        this.y = Math.random() * canvas!.height
-        this.radius = Math.random() * 1.8 + 0.4
-        this.baseSpeedY = Math.random() * 0.15 + 0.05
-        this.driftX = Math.random() * 0.1 - 0.05
-        this.alphaBase = Math.random() * 0.4 + 0.2
-        this.currentAlpha = this.alphaBase
-      }
-      refresh() {
-        this.y += this.baseSpeedY - (window.scrollY * 0.012)
-        this.x += this.driftX
-
-        if (this.y < 0) this.y = canvas!.height
-        if (this.y > canvas!.height) this.y = 0
-        if (this.x < 0) this.x = canvas!.width
-        if (this.x > canvas!.width) this.x = 0
-
-        if (mouseTracker.x !== null && mouseTracker.y !== null) {
-          let distanceX = mouseTracker.x - this.x
-          let distanceY = mouseTracker.y - this.y
-          let calculatedDist = Math.sqrt(distanceX * distanceX + distanceY * distanceY)
-          if (calculatedDist < 110) {
-            this.currentAlpha = 0.95
-          } else if (this.currentAlpha > this.alphaBase) {
-            this.currentAlpha -= 0.015
-          }
-        }
-      }
-      render() {
-        ctx!.fillStyle = `rgba(255, 75, 145, ${this.currentAlpha})`
-        ctx!.beginPath()
-        ctx!.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
-        ctx!.fill()
-      }
-    }
-
-    for(let i=0; i<70; i++) { starArray.push(new CosmicStar()) }
-
-    const handleMouseMove = (e: MouseEvent) => { 
-      mouseTracker.x = e.clientX; 
-      mouseTracker.y = e.clientY; 
-    }
-    const handleMouseLeave = () => { 
-      mouseTracker.x = null; 
-      mouseTracker.y = null; 
-    }
-    
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseleave', handleMouseLeave)
-
-    let animationId: number
-    const drawLoop = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      starArray.forEach(star => { star.refresh(); star.render(); })
-      animationId = requestAnimationFrame(drawLoop)
-    }
-    drawLoop()
-
-    return () => {
-      window.removeEventListener('resize', setCanvasSize)
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseleave', handleMouseLeave)
-      cancelAnimationFrame(animationId)
-    }
-  }, [])
-
-  return (
-    <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full pointer-events-none z-0" />
-  )
-}
-
-function DynamicCounter({ targetValue }: { targetValue: number }) {
-  const [value, setValue] = useState(0)
-  const elementRef = useRef<HTMLSpanElement>(null)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        const ceiling = targetValue
-        let current = 0
-        const velocity = Math.ceil(ceiling / 50)
-        
-        const counterRunner = setInterval(() => {
-          current += velocity
-          if(current >= ceiling) {
-            setValue(ceiling)
-            clearInterval(counterRunner)
-          } else {
-            setValue(current)
-          }
-        }, 30)
-        observer.disconnect()
-      }
-    })
-    
-    if (elementRef.current) observer.observe(elementRef.current)
-    return () => observer.disconnect()
-  }, [targetValue])
-
-  return <span ref={elementRef} className="text-sm font-extrabold text-white">{value}</span>
+function lcg(seed: number) {
+  let s = seed >>> 0
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0
+    return s / 4294967296
+  }
 }
 
 export default function HomePage() {
   const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [typedText, setTypedText] = useState('')
-  const [timelineHeight, setTimelineHeight] = useState(0)
-  const [tilt, setTilt] = useState({ x: 0, y: 0 })
-  const containerRef = useRef<HTMLDivElement>(null)
 
-  const handleStartJourney = (e: React.MouseEvent) => {
-    e.preventDefault()
+  const handleStartJourney = () => {
     setIsTransitioning(true)
-    setTimeout(() => {
-      router.push('/create-space')
-    }, 500)
+    setTimeout(() => router.push('/create-space'), 500)
   }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = (e.clientX - (rect.left + rect.width / 2)) / 15
-    const y = (e.clientY - (rect.top + rect.height / 2)) / 15
-    setTilt({ x: -y, y: x })
-  }
-
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 })
-  }
-  
-  useEffect(() => {
-    const scrollElements = document.querySelectorAll('.reveal-on-scroll')
-    const layoutObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if(entry.isIntersecting) {
-          entry.target.classList.add('active')
-          const activeDot = entry.target.querySelector('.timeline-dot')
-          if (activeDot) {
-            activeDot.classList.remove('border-white/20')
-            activeDot.classList.add('border-neonPink', 'shadow-glow-pink')
-          }
-          observer.unobserve(entry.target)
-        }
-      })
-    }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' })
-    
-    scrollElements.forEach(el => layoutObserver.observe(el))
-    return () => layoutObserver.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentPosition = window.scrollY
-      const featuresEl = document.getElementById('features')
-      const roadmapEl = document.getElementById('roadmap')
-      if (!featuresEl || !roadmapEl) return
-      
-      const featuresTop = featuresEl.offsetTop
-      const roadmapTop = roadmapEl.offsetTop
-      const totalTrackableHeight = roadmapTop - featuresTop
-
-      let percentage = ((currentPosition - featuresTop) / totalTrackableHeight) * 100
-      percentage = Math.min(Math.max(percentage, 0), 100)
-      setTimelineHeight(percentage)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  useEffect(() => {
-    const promptString = "Searching 2024 trip database... Found 3 video logs matching 'Hilarious'."
-    let index = 0
-    let timerId: NodeJS.Timeout
-
-    const runTypewriter = () => {
-      if (index < promptString.length) {
-        setTypedText(prev => prev + promptString.charAt(index))
-        index++
-        timerId = setTimeout(runTypewriter, 45)
-      } else {
-        timerId = setTimeout(() => {
-          setTypedText('')
-          index = 0
-          runTypewriter()
-        }, 4000)
-      }
-    }
-    runTypewriter()
-    return () => clearTimeout(timerId)
-  }, [])
 
   return (
-    <main className="relative min-h-screen text-slate-100 font-sans overflow-x-hidden" style={{ backgroundColor: '#05020a' }}>
-      
-      {/* Backgrounds */}
-      <NebulaShader />
-      <CosmicCanvas />
-      
-      <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-neonPurple/10 blur-[120px] pointer-events-none z-0" />
-      <div className="fixed bottom-[20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-neonPink/5 blur-[100px] pointer-events-none z-0" />
+    <main className="relative min-h-screen text-white overflow-x-hidden">
+      {/* Cinematic Background */}
+      <CosmicBackground />
+      <AuthModal />
 
-      <div className={`transition-opacity duration-500 ease-in-out ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-      {/* STICKY HEADER */}
-      <header className="sticky top-0 z-50 w-full bg-spaceBg/70 backdrop-blur-xl border-b border-white/5 py-4 px-6 md:px-12 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-neonPink to-neonPurple flex items-center justify-center shadow-glow-pink">
-              <Heart className="w-4.5 h-4.5 text-white fill-current" />
-            </div>
-            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-pink-100 bg-clip-text text-transparent">Forever Remembered</span>
-          </a>
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-gray-400">
-            <a href="#features" className="hover:text-white transition-colors">Home</a>
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#ai-features" className="hover:text-white transition-colors">AI Features</a>
-            <a href="#roadmap" className="hover:text-white transition-colors">Roadmap</a>
-            <a href="#about" className="hover:text-white transition-colors">About</a>
-          </nav>
-          <button onClick={handleStartJourney} className="px-5 py-2.5 bg-gradient-to-r from-neonPink to-neonPurple text-white text-xs font-bold rounded-full shadow-glow-pink hover:scale-105 active:scale-95 transition-all duration-300">
-            Start Your Journey
-          </button>
-        </div>
-      </header>
+      {/* Page transition wrapper */}
+      <div className={`relative z-10 transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
 
-      {/* HERO SECTION */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 pt-12 pb-24 grid md:grid-cols-2 gap-12 items-center min-h-[calc(100vh-80px)]">
-        
-        {/* Hero Information Left */}
-        <div className="reveal-on-scroll active">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-neonPink animate-ping"></span>
-            <span className="text-[10px] font-bold tracking-widest uppercase text-neonPink">#1 AI-Powered Memory Platform</span>
+        {/* Navbar */}
+        <Navbar />
+
+        {/* Hero Section */}
+        <HeroSection />
+
+        {/* Feature Cards */}
+        <FeatureCards />
+
+        {/* AI Features */}
+        <section id="ai-features" className="relative z-10 py-20 md:py-28">
+          <div className="max-w-7xl mx-auto px-6 md:px-10">
+            <AIFeaturesSection />
           </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.08] mb-6 text-white">
-            Remember <br />
-            <span className="bg-gradient-to-r from-neonPink via-purple-400 to-indigo-300 bg-clip-text text-transparent">Forever.</span>
-          </h1>
-          <p className="text-base text-gray-400 max-w-md mb-8 leading-relaxed">
-            Capture every moment. Relive every memory. Strengthen every bond with emotional intelligence built directly into your digital archive.
-          </p>
+        </section>
 
-          <div className="flex flex-wrap gap-2.5 mb-8">
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 text-[11px] border border-white/10 text-gray-300">
-              <Sparkles className="w-3 h-3 text-neonPink" /> AI-Powered
-            </span>
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 text-[11px] border border-white/10 text-gray-300">
-              <Lock className="w-3 h-3 text-neonPurple" /> Private & Secure
-            </span>
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 text-[11px] border border-white/10 text-gray-300">
-              <Heart className="w-3 h-3 text-rose-400 fill-current" /> Made for Love
-            </span>
+        {/* Timeline / How It Works */}
+        <section id="timeline" className="relative z-10 py-20 md:py-28">
+          <div className="max-w-7xl mx-auto px-6 md:px-10">
+            <TimelineSection />
           </div>
+        </section>
 
-          <div className="flex flex-col sm:flex-row items-center gap-5">
-            <button onClick={handleStartJourney} className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-neonPink to-neonPurple text-white font-bold text-sm rounded-xl shadow-glow-pink flex items-center justify-center gap-2 group hover:scale-105 transition-all">
-              Start Your Journey <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2.5">
-                <div className="w-8 h-8 rounded-full border-2 border-spaceBg bg-gray-700 overflow-hidden"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" className="object-cover w-full h-full" alt="" /></div>
-                <div className="w-8 h-8 rounded-full border-2 border-spaceBg bg-gray-600 overflow-hidden"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" className="object-cover w-full h-full" alt="" /></div>
-                <div className="w-8 h-8 rounded-full border-2 border-spaceBg bg-gray-500 overflow-hidden"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" className="object-cover w-full h-full" alt="" /></div>
+        {/* Roadmap */}
+        <section id="roadmap" className="relative z-10 py-10 md:py-16">
+          <div className="max-w-7xl mx-auto px-6 md:px-10">
+            <RoadmapSection />
+          </div>
+        </section>
+
+        {/* StoryBook Showcase */}
+        <section id="storybook" className="relative z-10 py-20 md:py-28">
+          <div className="max-w-7xl mx-auto px-6 md:px-10">
+            <StoryBookShowcase />
+          </div>
+        </section>
+
+        {/* Letters Section */}
+        <section id="letters" className="relative z-10 py-20 md:py-28">
+          <div className="max-w-7xl mx-auto px-6 md:px-10">
+            <LettersSection />
+          </div>
+        </section>
+
+        {/* About */}
+        <section id="about" className="relative z-10 py-20 md:py-28">
+          <div className="max-w-4xl mx-auto px-6 md:px-10 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[10px] font-bold tracking-[0.15em] uppercase text-neonPink mb-5">
+                About
+              </span>
+              <h2 className="font-serif-hero text-3xl md:text-[2.75rem] font-bold text-white leading-tight mb-6">
+                Built for those who{' '}
+                <span className="gradient-text-universe">refuse to forget</span>
+              </h2>
+              <p className="text-[16px] text-white/35 max-w-xl mx-auto leading-relaxed mb-6">
+                MemoryVerse was born from a simple belief: your most precious moments deserve more
+                than a camera roll. They deserve a universe — protected, intelligent, and eternal.
+              </p>
+              <p className="text-[15px] text-white/30 max-w-xl mx-auto leading-relaxed">
+                We combine military-grade encryption with cutting-edge AI to give you a platform
+                where memories aren&apos;t just stored — they&apos;re alive.
+              </p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Footer CTA */}
+        <section className="relative z-10 py-24 md:py-32">
+          <div className="max-w-4xl mx-auto px-6 md:px-10 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <h2 className="font-serif-hero text-3xl md:text-[3.5rem] font-bold text-white leading-tight mb-6">
+                Every Memory Deserves
+                <br />
+                <span className="gradient-text-universe">Its Own Universe</span>
+              </h2>
+              <p className="text-[16px] text-white/35 max-w-lg mx-auto mb-10 leading-relaxed">
+                Start preserving your digital legacy today. Your memories are waiting to become eternal.
+              </p>
+              <button
+                onClick={handleStartJourney}
+                className="btn-cosmic-primary text-[15px] px-10 py-4 inline-flex items-center gap-3 group"
+              >
+                <Sparkles className="w-5 h-5" />
+                Begin Your Journey
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="relative z-10 border-t border-white/[0.04] py-16">
+          <div className="max-w-7xl mx-auto px-6 md:px-10">
+            <div className="grid md:grid-cols-5 gap-10 mb-12">
+              {/* Brand */}
+              <div className="md:col-span-2">
+                <a href="/" className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-neonPink via-neonPurple to-cosmicBlue flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-white fill-white" />
+                  </div>
+                  <span className="text-base font-bold">
+                    <span className="text-white/90">Forever </span>
+                    <span className="bg-gradient-to-r from-neonPink to-neonPurple bg-clip-text text-transparent">Remembered</span>
+                  </span>
+                </a>
+                <p className="text-[13px] text-white/30 max-w-xs leading-relaxed mb-5">
+                  The AI-powered platform for preserving your most meaningful memories across your personal universe.
+                </p>
+                <div className="flex gap-3">
+                  {[
+                    <svg key="x" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z" /><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" /></svg>,
+                    <svg key="ig" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>,
+                    <svg key="gh" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>,
+                  ].map((icon, i) => (
+                    <a
+                      key={i}
+                      href="#"
+                      className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/30 hover:text-white/70 hover:border-white/[0.12] hover:bg-white/[0.08] transition-all duration-300"
+                    >
+                      {icon}
+                    </a>
+                  ))}
+                </div>
               </div>
-              <p className="text-[11px] text-gray-400">Loved by <span className="text-white font-bold">10,000+ couples</span> worldwide</p>
+
+              {/* Links */}
+              {[
+                {
+                  title: 'Product',
+                  links: ['Features', 'AI Engine', 'Pricing', 'Roadmap'],
+                },
+                {
+                  title: 'Company',
+                  links: ['About', 'Blog', 'Careers', 'Contact'],
+                },
+                {
+                  title: 'Resources',
+                  links: ['Privacy', 'Terms', 'Security', 'Help Center'],
+                },
+              ].map((col) => (
+                <div key={col.title}>
+                  <h5 className="text-[11px] font-bold text-white/50 uppercase tracking-[0.15em] mb-4">
+                    {col.title}
+                  </h5>
+                  <ul className="space-y-2.5">
+                    {col.links.map((link) => (
+                      <li key={link}>
+                        <a
+                          href="#"
+                          className="text-[13px] text-white/25 hover:text-white/60 transition-colors duration-300"
+                        >
+                          {link}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-white/[0.04] pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
+              <p className="text-[11px] text-white/20">
+                &copy; 2026 Forever Remembered. All rights reserved.
+              </p>
+              <p className="text-[11px] text-white/15">
+                Crafted with love for the universe of memories.
+              </p>
             </div>
           </div>
-        </div>
-
-        <div 
-          ref={containerRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          className="relative flex items-center justify-center min-h-[400px] reveal-on-scroll cube-scene" 
-          style={{ 
-            transitionDelay: '150ms',
-            transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-            transition: 'transform 0.15s ease-out'
-          }}
-        >
-          {/* Holographic Spinning Cube */}
-          <div className="cube-container relative flex items-center justify-center">
-            <div className="cube-face cube-face-front"></div>
-            <div className="cube-face cube-face-back"></div>
-            <div className="cube-face cube-face-right"></div>
-            <div className="cube-face cube-face-left"></div>
-            <div className="cube-face cube-face-top"></div>
-            <div className="cube-face cube-face-bottom"></div>
-
-            {/* Glowing Heart inside the cube (stays flat facing the viewer) */}
-            <div className="absolute z-10 animate-cosmic-heart pointer-events-none">
-              <Heart className="w-12 h-12 text-neonPink fill-current drop-shadow-[0_0_15px_rgba(255,75,145,0.85)]" />
-            </div>
-          </div>
-
-          {/* Orbiting Floating Nodes (5 badges) */}
-          <div className="orbit-node w-10 h-10 rounded-full glass-panel flex items-center justify-center" style={{ animationDelay: '0s' }}><Camera className="w-4 h-4 text-neonPink" /></div>
-          <div className="orbit-node w-10 h-10 rounded-full glass-panel flex items-center justify-center" style={{ animationDelay: '-5s' }}><MessageSquare className="w-4 h-4 text-neonPurple" /></div>
-          <div className="orbit-node w-10 h-10 rounded-full glass-panel flex items-center justify-center" style={{ animationDelay: '-10s' }}><Video className="w-4 h-4 text-indigo-400" /></div>
-          <div className="orbit-node w-10 h-10 rounded-full glass-panel flex items-center justify-center" style={{ animationDelay: '-15s' }}><Heart className="w-4 h-4 text-pink-400 fill-current" /></div>
-          <div className="orbit-node w-10 h-10 rounded-full glass-panel flex items-center justify-center" style={{ animationDelay: '-20s' }}><BookOpen className="w-4 h-4 text-purple-400" /></div>
-        </div>
-      </section>
-
-      {/* FEATURES BLOCK */}
-      <section id="features" className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 py-20">
-        <div className="text-center max-w-xl mx-auto mb-16 reveal-on-scroll">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-neonPink bg-white/5 px-3 py-1 rounded-full border border-white/10">Features</span>
-          <h2 className="text-3xl md:text-4xl font-extrabold mt-4 mb-3">
-            Features designed to <span className="bg-gradient-to-r from-neonPink to-neonPurple bg-clip-text text-transparent">preserve your relationship</span> forever.
-          </h2>
-          <p className="text-xs text-gray-400">Every feature is thoughtfully designed to help people capture, revisit, and strengthen meaningful relationships.</p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
-          <div className="glass-panel p-6 rounded-2xl interactive-card reveal-on-scroll" style={{ transitionDelay: '50ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center mb-5"><Camera className="w-5 h-5 text-neonPink" /></div>
-            <h3 className="font-bold text-base mb-2">Save Every Memory</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">Upload photos, videos, voice notes, journals, and milestones completely secure.</p>
-          </div>
-          <div className="glass-panel p-6 rounded-2xl interactive-card reveal-on-scroll" style={{ transitionDelay: '100ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-5"><Sparkles className="w-5 h-5 text-neonPurple" /></div>
-            <h3 className="font-bold text-base mb-2">AI Memory Journal</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">AI automatically builds comprehensive, beautifully organized monthly journals.</p>
-          </div>
-          <div className="glass-panel p-6 rounded-2xl interactive-card reveal-on-scroll" style={{ transitionDelay: '150ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-5"><Globe className="w-5 h-5 text-indigo-400" /></div>
-            <h3 className="font-bold text-base mb-2">Memory Galaxy</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">Explore memories mapped out uniquely as stars in a personalized constellation web.</p>
-          </div>
-          <div className="glass-panel p-6 rounded-2xl interactive-card reveal-on-scroll" style={{ transitionDelay: '50ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-5"><Activity className="w-5 h-5 text-rose-400" /></div>
-            <h3 className="font-bold text-base mb-2">Time Machine</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">Ask anything natively: "Show us our funniest day" or "Show our first trip context."</p>
-          </div>
-          <div className="glass-panel p-6 rounded-2xl interactive-card reveal-on-scroll" style={{ transitionDelay: '100ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center mb-5"><Mail className="w-5 h-5 text-fuchsia-400" /></div>
-            <h3 className="font-bold text-base mb-2">AI Letters</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">Receive deeply meaningful prompts and surprise correspondence based on shared files.</p>
-          </div>
-          <div className="glass-panel p-6 rounded-2xl interactive-card reveal-on-scroll" style={{ transitionDelay: '150ms' }}>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5"><Hourglass className="w-5 h-5 text-amber-400" /></div>
-            <h3 className="font-bold text-base mb-2">Future Time Capsules</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">Schedule digital footprints to unlock cleanly on key anniversaries years down the road.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* TIMELINE SECTION */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 py-20">
-        <div className="text-center mb-16 reveal-on-scroll">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-neonPink bg-white/5 px-3 py-1 rounded-full border border-white/10">How It Works</span>
-          <h2 className="text-3xl font-extrabold mt-3">Simple steps to connection logs.</h2>
-        </div>
-
-        <div className="relative">
-          {/* Center Vertical Path Line */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[3px] h-full bg-white/10 rounded-full overflow-hidden">
-            <div className="w-full bg-gradient-to-b from-neonPink to-neonPurple transition-all duration-150" style={{ height: `${timelineHeight}%` }}></div>
-          </div>
-
-          <div className="relative grid grid-cols-2 gap-8 mb-12 items-center reveal-on-scroll">
-            <div className="text-right pr-10">
-              <h4 className="font-bold text-base text-white">Create Your Memory Space</h4>
-              <p className="text-xs text-gray-400 mt-1">Build a secure, private room configured uniquely for your dynamic.</p>
-            </div>
-            <div className="relative pl-10">
-              <div className="timeline-dot absolute left-0 -translate-x-1/2 w-7 h-7 rounded-full bg-spaceBg border-4 border-white/20 z-10 flex items-center justify-center text-[10px] font-bold text-white transition-colors duration-300">1</div>
-              <div className="glass-panel p-4 rounded-xl max-w-xs"><Layout className="w-5 h-5 text-neonPink" /></div>
-            </div>
-          </div>
-
-          <div className="relative grid grid-cols-2 gap-8 mb-12 items-center reveal-on-scroll">
-            <div className="relative text-right pr-10 flex justify-end">
-              <div className="glass-panel p-4 rounded-xl max-w-xs mr-0"><UserPlus className="w-5 h-5 text-neonPurple" /></div>
-              <div className="timeline-dot absolute right-0 translate-x-1/2 w-7 h-7 rounded-full bg-spaceBg border-4 border-white/20 z-10 flex items-center justify-center text-[10px] font-bold text-white transition-colors duration-300">2</div>
-            </div>
-            <div className="pl-10">
-              <h4 className="font-bold text-base text-white">Invite Someone You Love</h4>
-              <p className="text-xs text-gray-400 mt-1">Bring your partner into your encrypted collaborative archive space seamlessly.</p>
-            </div>
-          </div>
-
-          <div className="relative grid grid-cols-2 gap-8 mb-12 items-center reveal-on-scroll">
-            <div className="text-right pr-10">
-              <h4 className="font-bold text-base text-white">Save Moments Together</h4>
-              <p className="text-xs text-gray-400 mt-1">Simultaneously post entries, images, and audio syncs effortlessly.</p>
-            </div>
-            <div className="relative pl-10">
-              <div className="timeline-dot absolute left-0 -translate-x-1/2 w-7 h-7 rounded-full bg-spaceBg border-4 border-white/20 z-10 flex items-center justify-center text-[10px] font-bold text-white transition-colors duration-300">3</div>
-              <div className="glass-panel p-4 rounded-xl max-w-xs"><ImageIcon className="w-5 h-5 text-cosmicBlue" /></div>
-            </div>
-          </div>
-
-          <div className="relative grid grid-cols-2 gap-8 items-center reveal-on-scroll">
-            <div className="relative text-right pr-10 flex justify-end">
-              <div className="glass-panel p-4 rounded-xl max-w-xs mr-0"><Heart className="w-5 h-5 text-pink-400" /></div>
-              <div className="timeline-dot absolute right-0 translate-x-1/2 w-7 h-7 rounded-full bg-spaceBg border-4 border-white/20 z-10 flex items-center justify-center text-[10px] font-bold text-white transition-colors duration-300">4</div>
-            </div>
-            <div className="pl-10">
-              <h4 className="font-bold text-base text-white">Relive Them Forever</h4>
-              <p className="text-xs text-gray-400 mt-1">Let AI process regular highlight reels to bring memory data clusters back alive.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* MOCKUPS BLOCK */}
-      <section id="ai-features" className="relative z-10 max-w-7xl mx-auto px-6 py-20">
-        <div className="text-center max-w-xl mx-auto mb-16 reveal-on-scroll">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-neonPink bg-white/5 px-3 py-1 rounded-full border border-white/10">AI Features</span>
-          <h2 className="text-3xl font-extrabold mt-3">Powerful AI that understands your love.</h2>
-        </div>
-
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-5">
-          <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between reveal-on-scroll">
-            <div>
-              <h4 className="font-bold text-sm mb-1">Memory Galaxy</h4>
-              <p className="text-[11px] text-gray-400 mb-4">Constellation mapping mechanics.</p>
-            </div>
-            <div className="h-40 bg-black/40 rounded-xl relative overflow-hidden border border-white/5 flex items-center justify-center">
-              <div className="absolute w-2 h-2 rounded-full bg-neonPink top-10 left-12 animate-pulse shadow-glow-pink"></div>
-              <div className="absolute w-2 h-2 rounded-full bg-neonPurple bottom-8 right-16 shadow-glow-purple"></div>
-              <div className="absolute w-1.5 h-1.5 rounded-full bg-cosmicBlue top-20 right-8"></div>
-              <svg className="w-full h-full opacity-30"><line x1="48" y1="40" x2="160" y2="100" stroke="white"/><line x1="160" y1="100" x2="200" y2="50" stroke="white"/></svg>
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between reveal-on-scroll" style={{ transitionDelay: '50ms' }}>
-            <div>
-              <h4 className="font-bold text-sm mb-1">AI Memory Journal</h4>
-              <p className="text-[11px] text-gray-400 mb-4">Auto compilation generation.</p>
-            </div>
-            <div className="h-40 bg-black/30 rounded-xl border border-white/5 p-3 flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] text-amber-400 font-semibold"><BookOpen className="w-3.5 h-3.5" /> Entry #84</div>
-              <p className="text-[10px] text-gray-400 italic">"The weather cleared as you stepped onto the pier..."</p>
-              <span className="text-[9px] text-gray-500">Auto-logged 2026</span>
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between reveal-on-scroll" style={{ transitionDelay: '100ms' }}>
-            <div>
-              <h4 className="font-bold text-sm mb-1">Time Machine</h4>
-              <p className="text-[11px] text-gray-400 mb-4">Instant natural prompt searches.</p>
-            </div>
-            <div className="h-40 bg-black/40 rounded-xl border border-white/5 p-3 flex flex-col justify-between">
-              <div className="text-[9px] text-right bg-white/5 px-2 py-1 rounded-md max-w-[85%] ml-auto text-gray-300">"Show our funniest day."</div>
-              <div className="bg-neonPurple/10 border border-neonPurple/20 p-2 rounded-md">
-                <p className="text-[9px] text-purple-300 font-mono">{typedText}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between reveal-on-scroll" style={{ transitionDelay: '150ms' }}>
-            <div>
-              <h4 className="font-bold text-sm mb-1">Relationship DNA</h4>
-              <p className="text-[11px] text-gray-400 mb-4">Deep telemetry data streams.</p>
-            </div>
-            <div className="h-40 bg-black/40 rounded-xl border border-white/5 p-3 flex flex-col justify-between">
-              <div className="flex justify-between items-center"><span className="text-[10px] text-gray-400">Total Safes</span><DynamicCounter targetValue={942} /></div>
-              <div className="flex justify-between items-center"><span className="text-[10px] text-gray-400">Sync Index</span><DynamicCounter targetValue={98} /></div>
-              <svg viewBox="0 0 100 25" className="w-full h-8 opacity-70"><path d="M0,20 Q20,5 40,15 T80,5 T100,18" fill="none" stroke="#ff4b91" strokeWidth="2"/></svg>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ROADMAP BLOCK */}
-      <section id="roadmap" className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
-        <div className="text-center max-w-xl mx-auto mb-16 reveal-on-scroll">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-neonPink bg-white/5 px-3 py-1 rounded-full border border-white/10">Roadmap</span>
-          <h2 className="text-3xl font-extrabold mt-3">Our journey to build the future of memories.</h2>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="glass-panel p-5 rounded-2xl border-t-4 border-t-emerald-500 reveal-on-scroll">
-            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Phase 1</span>
-            <h4 className="font-bold text-sm text-white mb-2">Shared Spaces</h4>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-[9px] font-medium text-emerald-400">Completed</span>
-          </div>
-          <div className="glass-panel p-5 rounded-2xl border-t-4 border-t-cosmicBlue reveal-on-scroll" style={{ transitionDelay: '50ms' }}>
-            <span className="text-[9px] font-bold text-cosmicBlue uppercase tracking-wider block mb-1">Phase 2</span>
-            <h4 className="font-bold text-sm text-white mb-2">AI Memory Journal</h4>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-[9px] font-medium text-cosmicBlue">In Progress</span>
-          </div>
-          <div className="glass-panel p-5 rounded-2xl border-t-4 border-t-neonPurple reveal-on-scroll" style={{ transitionDelay: '100ms' }}>
-            <span className="text-[9px] font-bold text-neonPurple uppercase tracking-wider block mb-1">Phase 3</span>
-            <h4 className="font-bold text-sm text-white mb-2">Memory Galaxy</h4>
-            <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-[9px] font-medium text-neonPurple">Coming Soon</span>
-          </div>
-          <div className="glass-panel p-5 rounded-2xl border-t-4 border-t-neonPink reveal-on-scroll" style={{ transitionDelay: '150ms' }}>
-            <span className="text-[9px] font-bold text-neonPink uppercase tracking-wider block mb-1">Phase 4</span>
-            <h4 className="font-bold text-sm text-white mb-2">Time Machine</h4>
-            <span className="px-2 py-0.5 rounded-full bg-pink-500/10 text-[9px] font-medium text-neonPink">Coming Soon</span>
-          </div>
-          <div className="glass-panel p-5 rounded-2xl border-t-4 border-t-gray-600 reveal-on-scroll" style={{ transitionDelay: '200ms' }}>
-            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Phase 5</span>
-            <h4 className="font-bold text-sm text-white mb-2">Highlight Reels</h4>
-            <span className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-medium text-gray-400">Future</span>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER HERO CTA AREA */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 py-28 text-center overflow-hidden">
-        <div className="absolute top-10 left-5 md:left-20 w-24 h-28 bg-white/5 border border-white/10 p-1.5 rounded-md shadow-lg rotate-[-12deg] polaroid-float pointer-events-none hidden sm:block">
-          <div className="w-full h-20 bg-gray-800 rounded mb-1 overflow-hidden"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" className="object-cover w-full h-full" alt="" /></div>
-        </div>
-        <div className="absolute bottom-10 right-5 md:right-20 w-24 h-28 bg-white/5 border border-white/10 p-1.5 rounded-md shadow-lg rotate-[8deg] polaroid-float pointer-events-none hidden sm:block" style={{ animationDelay: '-3s' }}>
-          <div className="w-full h-20 bg-gray-800 rounded mb-1 overflow-hidden"><img src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=100&q=80" className="object-cover w-full h-full" alt="" /></div>
-        </div>
-
-        <div className="max-w-2xl mx-auto reveal-on-scroll">
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-6">Every Relationship Deserves <br />to Be Remembered.</h2>
-          <p className="text-sm text-gray-400 max-w-md mx-auto mb-8">Start preserving your shared digital legacy today and let intelligence organize tomorrow.</p>
-          <button onClick={handleStartJourney} className="px-8 py-4 bg-gradient-to-r from-neonPink to-neonPurple text-white font-bold rounded-xl shadow-glow-pink hover:scale-105 transition-all mx-auto flex items-center gap-2">
-            Begin Your Journey <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="relative z-10 border-t border-white/5 bg-black/30 backdrop-blur-md pt-16 pb-8 text-xs text-gray-500">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-          <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 rounded bg-gradient-to-tr from-neonPink to-neonPurple flex items-center justify-center shadow-glow-pink"><Heart className="w-3 h-3 text-white fill-current" /></div>
-              <span className="font-bold text-white text-sm">Forever Remembered</span>
-            </div>
-            <p className="max-w-xs leading-relaxed mb-4">AI-Powered Platform optimized securely for relationships.</p>
-            <div className="flex gap-3 text-gray-400">
-              <a href="#" className="hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg></a>
-              <a href="#" className="hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg></a>
-              <a href="#" className="hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg></a>
-            </div>
-          </div>
-          <div>
-            <h5 className="text-white font-bold uppercase tracking-wider text-[10px] mb-3">Product</h5>
-            <ul className="space-y-1.5"><li className="hover:text-white"><a href="#">Features</a></li><li className="hover:text-white"><a href="#">AI Engine</a></li></ul>
-          </div>
-          <div>
-            <h5 className="text-white font-bold uppercase tracking-wider text-[10px] mb-3">Company</h5>
-            <ul className="space-y-1.5"><li className="hover:text-white"><a href="#">About</a></li><li className="hover:text-white"><a href="#">Contact</a></li></ul>
-          </div>
-          <div>
-            <h5 className="text-white font-bold uppercase tracking-wider text-[10px] mb-3">Resources</h5>
-            <ul className="space-y-1.5"><li className="hover:text-white"><a href="#">Privacy</a></li><li className="hover:text-white"><a href="#">Terms</a></li></ul>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 border-t border-white/5 pt-6 flex justify-between items-center text-[10px]">
-          <p>&copy; 2026 Forever Remembered. All rights reserved.</p>
-        </div>
-      </footer>
+        </footer>
       </div>
     </main>
+  )
+}
+
+/* ─── Sub-Sections ─── */
+
+function AIFeaturesSection() {
+  const inViewRef = useRef(null)
+  const inView = useInView(inViewRef, { once: true, margin: '-60px' })
+
+  return (
+    <div ref={inViewRef}>
+      {/* Header */}
+      <div className="text-center mb-16">
+        <motion.span
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[10px] font-bold tracking-[0.15em] uppercase text-neonPink mb-6"
+        >
+          AI Features
+        </motion.span>
+        <motion.h2
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="font-serif-hero text-[2.5rem] md:text-[3.5rem] lg:text-[64px] font-bold text-white leading-[1.05] tracking-[-0.03em] max-w-[900px] mx-auto"
+          style={{ marginBottom: '24px' }}
+        >
+          Powerful AI that understands your{' '}
+          <span className="gradient-text-universe animate-preserve-glow">memories</span>
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+          className="text-[18px] font-normal text-[#A7A0B8] max-w-[700px] mx-auto leading-[1.7]"
+        >
+          Artificial Intelligence that transforms scattered memories into stories, timelines, insights and emotional journeys.
+        </motion.p>
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <GalaxyCard delay={0} inView={inView} />
+        <StoryCard delay={0.12} inView={inView} />
+        <TimeCard delay={0.24} inView={inView} />
+        <PulseCard delay={0.36} inView={inView} />
+      </div>
+    </div>
+  )
+}
+
+/* ── Card 1: AI Memory Galaxy ── */
+function GalaxyCard({ delay, inView }: { delay: number; inView: boolean }) {
+  const [hovered, setHovered] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
+  const rotateX = useTransform(springY, (v: number) => -v * 0.02)
+  const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
+
+  const stars = useMemo(() => {
+    const rng = lcg(101)
+    return Array.from({ length: 18 }).map(() => ({
+      x: rng() * 85 + 7,
+      y: rng() * 55 + 10,
+      size: rng() * 2.5 + 1,
+      delay: rng() * 4,
+      dur: rng() * 3 + 2,
+    }))
+  }, [])
+
+  const connections = useMemo(() => {
+    const pts = [
+      { x: 25, y: 30 }, { x: 50, y: 18 }, { x: 72, y: 35 },
+      { x: 38, y: 52 }, { x: 62, y: 55 }, { x: 80, y: 22 },
+      { x: 15, y: 48 }, { x: 55, y: 40 },
+    ]
+    const lines = [[0,1],[1,2],[0,3],[3,4],[2,5],[6,3],[1,7],[7,4]]
+    return { pts, lines }
+  }, [])
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!cardRef.current) return
+    const r = cardRef.current.getBoundingClientRect()
+    mouseX.set(e.clientX - (r.left + r.width / 2))
+    mouseY.set(e.clientY - (r.top + r.height / 2))
+  }
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40, scale: 0.96, filter: 'blur(6px)' }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      onMouseMove={handleMouse}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+      className="relative cursor-default"
+      style={{ perspective: 800 }}
+    >
+      <motion.div
+        className="relative rounded-[28px] overflow-hidden h-[420px] flex flex-col"
+        style={{
+          background: 'rgba(18,10,35,0.55)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          rotateX: hovered ? rotateX : 0,
+          rotateY: hovered ? rotateY : 0,
+          transformStyle: 'preserve-3d',
+        }}
+        animate={{
+          y: hovered ? -8 : [0, -6, 0, 6, 0],
+          boxShadow: hovered
+            ? '0 30px 70px -15px rgba(0,0,0,0.6), 0 0 60px rgba(168,85,247,0.12), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+          borderColor: hovered ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.06)',
+        }}
+        transition={{ y: { duration: 8, repeat: Infinity, ease: 'easeInOut' }, boxShadow: { duration: 0.4 }, borderColor: { duration: 0.4 } }}
+      >
+        {/* Reflection sweep */}
+        <motion.div className="absolute inset-0 pointer-events-none z-20"
+          style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.03) 50%, transparent 65%)' }}
+          animate={{ x: hovered ? ['0%', '120%'] : ['-120%', '-120%'] }}
+          transition={{ duration: 0.8, ease: 'easeOut', repeat: hovered ? 0 : Infinity, repeatDelay: 6 }}
+        />
+
+        {/* Preview area */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Nebula glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 60%)', filter: 'blur(30px)' }} />
+
+          {/* Stars */}
+          {stars.map((s, i) => (
+            <motion.div key={i} className="absolute rounded-full bg-white"
+              style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size }}
+              animate={{ opacity: [0.2, 0.8, 0.2], scale: [0.8, 1.3, 0.8] }}
+              transition={{ duration: s.dur, repeat: Infinity, delay: s.delay, ease: 'easeInOut' }}
+            />
+          ))}
+
+          {/* Constellation lines */}
+          <svg className="absolute inset-0 w-full h-full">
+            {connections.lines.map(([a, b], i) => {
+              const pa = connections.pts[a]
+              const pb = connections.pts[b]
+              return (
+                <motion.line key={i}
+                  x1={`${pa.x}%`} y1={`${pa.y}%`} x2={`${pb.x}%`} y2={`${pb.y}%`}
+                  stroke="rgba(168,85,247,0.2)" strokeWidth="0.8"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: [0.15, 0.4, 0.15] }}
+                  transition={{ pathLength: { duration: 2, delay: 0.3 + i * 0.15 }, opacity: { duration: 4, repeat: Infinity, delay: i * 0.3 } }}
+                />
+              )
+            })}
+            {connections.pts.map((p, i) => (
+              <motion.circle key={`n-${i}`}
+                cx={`${p.x}%`} cy={`${p.y}%`} r="3"
+                fill="rgba(168,85,247,0.5)"
+                animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 3, repeat: Infinity, delay: i * 0.4, ease: 'easeInOut' }}
+              />
+            ))}
+          </svg>
+
+          {/* Floating particles */}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <motion.div key={`p-${i}`} className="absolute rounded-full"
+              style={{
+                left: `${15 + (i * 9)}%`, top: `${20 + (i * 7) % 50}%`,
+                width: 1.5, height: 1.5, background: 'rgba(192,132,252,0.3)',
+              }}
+              animate={{ y: [0, -20, 0], opacity: [0, 0.5, 0] }}
+              transition={{ duration: 5 + i, repeat: Infinity, delay: i * 0.6, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+
+        {/* Text */}
+        <div className="relative z-10 p-6 pt-4">
+          <h3 className="text-white font-bold text-[18px] mb-1.5">AI Memory Galaxy</h3>
+          <p className="text-white/35 text-[14px] leading-relaxed">Every memory becomes a living constellation.</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+/* ── Card 2: AI StoryBook ── */
+function StoryCard({ delay, inView }: { delay: number; inView: boolean }) {
+  const [hovered, setHovered] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
+  const rotateX = useTransform(springY, (v: number) => -v * 0.02)
+  const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
+
+  const fullText = "The sun painted the whitewashed buildings in shades of gold as she stepped onto the balcony..."
+  const [displayText, setDisplayText] = useState('')
+  const [cursorVisible, setCursorVisible] = useState(true)
+  const charIndex = useRef(0)
+
+  useEffect(() => {
+    const typeTimer = setInterval(() => {
+      if (charIndex.current < fullText.length) {
+        setDisplayText(fullText.slice(0, charIndex.current + 1))
+        charIndex.current++
+      } else {
+        clearInterval(typeTimer)
+      }
+    }, 50)
+    const cursorTimer = setInterval(() => setCursorVisible(v => !v), 530)
+    return () => { clearInterval(typeTimer); clearInterval(cursorTimer) }
+  }, [])
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!cardRef.current) return
+    const r = cardRef.current.getBoundingClientRect()
+    mouseX.set(e.clientX - (r.left + r.width / 2))
+    mouseY.set(e.clientY - (r.top + r.height / 2))
+  }
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40, scale: 0.96, filter: 'blur(6px)' }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      onMouseMove={handleMouse}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+      className="relative cursor-default"
+      style={{ perspective: 800 }}
+    >
+      <motion.div
+        className="relative rounded-[28px] overflow-hidden h-[420px] flex flex-col"
+        style={{
+          background: 'rgba(18,10,35,0.55)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          rotateX: hovered ? rotateX : 0,
+          rotateY: hovered ? rotateY : 0,
+          transformStyle: 'preserve-3d',
+        }}
+        animate={{
+          y: hovered ? -8 : [0, -6, 0, 6, 0],
+          boxShadow: hovered
+            ? '0 30px 70px -15px rgba(0,0,0,0.6), 0 0 60px rgba(255,77,184,0.1), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+          borderColor: hovered ? 'rgba(255,77,184,0.2)' : 'rgba(255,255,255,0.06)',
+        }}
+        transition={{ y: { duration: 8, repeat: Infinity, ease: 'easeInOut' }, boxShadow: { duration: 0.4 }, borderColor: { duration: 0.4 } }}
+      >
+        <motion.div className="absolute inset-0 pointer-events-none z-20"
+          style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.03) 50%, transparent 65%)' }}
+          animate={{ x: hovered ? ['0%', '120%'] : ['-120%', '-120%'] }}
+          transition={{ duration: 0.8, ease: 'easeOut', repeat: hovered ? 0 : Infinity, repeatDelay: 6 }}
+        />
+
+        {/* Preview */}
+        <div className="flex-1 relative overflow-hidden p-6 flex items-center justify-center">
+          <motion.div
+            className="w-full max-w-[220px] rounded-xl p-5 relative"
+            style={{
+              background: 'linear-gradient(145deg, rgba(30,18,50,0.7), rgba(20,12,38,0.5))',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            }}
+            animate={{ rotateY: hovered ? 3 : 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          >
+            {/* Book spine glow */}
+            <div className="absolute left-0 top-0 bottom-0 w-[2px] rounded-full"
+              style={{ background: 'linear-gradient(180deg, rgba(255,77,184,0.3), rgba(168,85,247,0.3))' }} />
+
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded-md flex items-center justify-center"
+                style={{ background: 'rgba(255,77,184,0.12)', border: '1px solid rgba(255,77,184,0.2)' }}>
+                <span className="text-[8px]">✨</span>
+              </div>
+              <span className="text-[10px] text-white/50 font-medium">Summer in Santorini</span>
+            </div>
+
+            <div className="h-[1px] bg-white/[0.06] mb-3" />
+
+            <p className="text-[11px] text-white/50 leading-[1.8] italic font-light min-h-[80px]">
+              {displayText}
+              <span className="inline-block w-[1.5px] h-[12px] ml-[1px] align-middle"
+                style={{
+                  background: '#FF4DB8',
+                  opacity: cursorVisible ? 0.8 : 0,
+                  transition: 'opacity 0.1s',
+                }} />
+            </p>
+
+            <div className="flex gap-2 mt-3">
+              {[0.7, 0.5, 0.6].map((o, i) => (
+                <div key={i} className="w-12 h-8 rounded-md"
+                  style={{ background: `rgba(168,85,247,${o * 0.08})`, border: '1px solid rgba(255,255,255,0.04)' }} />
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="relative z-10 p-6 pt-4">
+          <h3 className="text-white font-bold text-[18px] mb-1.5">AI StoryBook</h3>
+          <p className="text-white/35 text-[14px] leading-relaxed">Turn memories into beautifully written chapters.</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+/* ── Card 3: Time Machine ── */
+function TimeCard({ delay, inView }: { delay: number; inView: boolean }) {
+  const [hovered, setHovered] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
+  const rotateX = useTransform(springY, (v: number) => -v * 0.02)
+  const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
+
+  const [phase, setPhase] = useState(0) // 0=query, 1=searching, 2=result
+  const [dots, setDots] = useState('')
+
+  useEffect(() => {
+    const cycle = setInterval(() => {
+      setPhase(0)
+      setDots('')
+      let count = 0
+      const searchTimer = setInterval(() => {
+        count++
+        setDots('.'.repeat(count % 4))
+        if (count > 8) {
+          clearInterval(searchTimer)
+          setPhase(2)
+          setTimeout(() => setPhase(0), 3000)
+        }
+      }, 300)
+    }, 6000)
+    return () => clearInterval(cycle)
+  }, [])
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!cardRef.current) return
+    const r = cardRef.current.getBoundingClientRect()
+    mouseX.set(e.clientX - (r.left + r.width / 2))
+    mouseY.set(e.clientY - (r.top + r.height / 2))
+  }
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40, scale: 0.96, filter: 'blur(6px)' }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      onMouseMove={handleMouse}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+      className="relative cursor-default"
+      style={{ perspective: 800 }}
+    >
+      <motion.div
+        className="relative rounded-[28px] overflow-hidden h-[420px] flex flex-col"
+        style={{
+          background: 'rgba(18,10,35,0.55)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          rotateX: hovered ? rotateX : 0,
+          rotateY: hovered ? rotateY : 0,
+          transformStyle: 'preserve-3d',
+        }}
+        animate={{
+          y: hovered ? -8 : [0, -6, 0, 6, 0],
+          boxShadow: hovered
+            ? '0 30px 70px -15px rgba(0,0,0,0.6), 0 0 60px rgba(99,102,241,0.1), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+          borderColor: hovered ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)',
+        }}
+        transition={{ y: { duration: 8, repeat: Infinity, ease: 'easeInOut' }, boxShadow: { duration: 0.4 }, borderColor: { duration: 0.4 } }}
+      >
+        <motion.div className="absolute inset-0 pointer-events-none z-20"
+          style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.03) 50%, transparent 65%)' }}
+          animate={{ x: hovered ? ['0%', '120%'] : ['-120%', '-120%'] }}
+          transition={{ duration: 0.8, ease: 'easeOut', repeat: hovered ? 0 : Infinity, repeatDelay: 6 }}
+        />
+
+        {/* Preview - Terminal */}
+        <div className="flex-1 relative overflow-hidden p-5">
+          <motion.div
+            className="w-full h-full rounded-xl p-4 flex flex-col"
+            style={{
+              background: 'rgba(12,6,24,0.7)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              boxShadow: 'inset 0 0 40px rgba(168,85,247,0.04)',
+            }}
+          >
+            {/* Terminal header */}
+            <div className="flex items-center gap-1.5 mb-3">
+              <div className="w-2 h-2 rounded-full bg-red-500/40" />
+              <div className="w-2 h-2 rounded-full bg-yellow-500/40" />
+              <div className="w-2 h-2 rounded-full bg-green-500/40" />
+              <span className="text-[9px] text-white/20 ml-2 font-mono">MemoryVerse AI</span>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-center gap-3 font-mono text-[11px]">
+              {/* User query */}
+              <div className="flex items-start gap-2">
+                <span className="text-neonPink/60">›</span>
+                <span className="text-white/60">Show our funniest vacation</span>
+                <motion.span className="inline-block w-[6px] h-[12px] bg-neonPink/50"
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.5, repeat: Infinity }} />
+              </div>
+
+              {/* Searching */}
+              <motion.div className="flex items-center gap-2 text-white/25"
+                animate={{ opacity: phase === 0 ? 1 : 0.4 }}>
+                <span className="text-neonPurple/50">↻</span>
+                <span>Searching memories{phase <= 1 ? dots : ''}</span>
+              </motion.div>
+
+              {/* Results */}
+              <motion.div className="space-y-2"
+                animate={{ opacity: phase === 2 ? 1 : 0.2, y: phase === 2 ? 0 : 5 }}
+                transition={{ duration: 0.4 }}>
+                {['Bali Trip 2024', 'Tokyo Nights', 'Beach Day'].map((m, i) => (
+                  <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                    style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.08)' }}>
+                    <div className="w-5 h-5 rounded bg-gradient-to-br from-neonPink/20 to-neonPurple/20" />
+                    <span className="text-white/50 text-[10px]">{m}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="relative z-10 p-6 pt-4">
+          <h3 className="text-white font-bold text-[18px] mb-1.5">Time Machine</h3>
+          <p className="text-white/35 text-[14px] leading-relaxed">Ask AI about any memory using natural language.</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+/* ── Card 4: Relationship Pulse ── */
+function PulseCard({ delay, inView }: { delay: number; inView: boolean }) {
+  const [hovered, setHovered] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
+  const rotateX = useTransform(springY, (v: number) => -v * 0.02)
+  const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
+
+  const [emotionScore, setEmotionScore] = useState(0)
+  const [happyCount, setHappyCount] = useState(0)
+  const [growth, setGrowth] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setEmotionScore(v => (v < 98 ? v + 1 : 98))
+      setHappyCount(v => (v < 842 ? v + 12 : 842))
+      setGrowth(v => (v < 28 ? v + 1 : 28))
+    }, 40)
+    return () => clearInterval(timer)
+  }, [])
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!cardRef.current) return
+    const r = cardRef.current.getBoundingClientRect()
+    mouseX.set(e.clientX - (r.left + r.width / 2))
+    mouseY.set(e.clientY - (r.top + r.height / 2))
+  }
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40, scale: 0.96, filter: 'blur(6px)' }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      onMouseMove={handleMouse}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+      className="relative cursor-default"
+      style={{ perspective: 800 }}
+    >
+      <motion.div
+        className="relative rounded-[28px] overflow-hidden h-[420px] flex flex-col"
+        style={{
+          background: 'rgba(18,10,35,0.55)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          rotateX: hovered ? rotateX : 0,
+          rotateY: hovered ? rotateY : 0,
+          transformStyle: 'preserve-3d',
+        }}
+        animate={{
+          y: hovered ? -8 : [0, -6, 0, 6, 0],
+          boxShadow: hovered
+            ? '0 30px 70px -15px rgba(0,0,0,0.6), 0 0 60px rgba(236,72,153,0.1), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+          borderColor: hovered ? 'rgba(236,72,153,0.2)' : 'rgba(255,255,255,0.06)',
+        }}
+        transition={{ y: { duration: 8, repeat: Infinity, ease: 'easeInOut' }, boxShadow: { duration: 0.4 }, borderColor: { duration: 0.4 } }}
+      >
+        <motion.div className="absolute inset-0 pointer-events-none z-20"
+          style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.03) 50%, transparent 65%)' }}
+          animate={{ x: hovered ? ['0%', '120%'] : ['-120%', '-120%'] }}
+          transition={{ duration: 0.8, ease: 'easeOut', repeat: hovered ? 0 : Infinity, repeatDelay: 6 }}
+        />
+
+        {/* Preview */}
+        <div className="flex-1 relative overflow-hidden p-5">
+          <div className="w-full h-full rounded-xl p-4 flex flex-col gap-3"
+            style={{ background: 'rgba(12,6,24,0.5)', border: '1px solid rgba(255,255,255,0.04)' }}>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Emotion Score', value: `${emotionScore}%`, color: '#FF4DB8' },
+                { label: 'Happy Moments', value: happyCount.toString(), color: '#A855F7' },
+                { label: 'Growth', value: `+${growth}%`, color: '#06B6D4' },
+              ].map((s) => (
+                <div key={s.label} className="text-center p-2 rounded-lg" style={{ background: `${s.color}08`, border: `1px solid ${s.color}15` }}>
+                  <div className="text-[18px] font-bold" style={{ color: s.color }}>{s.value}</div>
+                  <div className="text-[8px] text-white/30 mt-0.5 uppercase tracking-wider">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Heartbeat line */}
+            <div className="flex-1 relative">
+              <svg className="w-full h-full" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <motion.path
+                  d="M0,30 L30,30 L35,10 L40,50 L45,20 L50,40 L55,30 L80,30 L85,15 L90,45 L95,25 L100,35 L105,30 L130,30 L135,12 L140,48 L145,22 L150,38 L155,30 L200,30"
+                  fill="none"
+                  stroke="url(#pulseGrad)"
+                  strokeWidth="1.5"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                />
+                <defs>
+                  <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#FF4DB8" />
+                    <stop offset="50%" stopColor="#A855F7" />
+                    <stop offset="100%" stopColor="#06B6D4" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+
+            {/* Mini bar chart */}
+            <div className="flex items-end gap-1 h-[30px]">
+              {[40, 55, 35, 65, 50, 70, 45, 80, 60, 75, 55, 85].map((h, i) => (
+                <motion.div key={i} className="flex-1 rounded-t-sm"
+                  style={{ background: `linear-gradient(180deg, rgba(255,77,184,0.3), rgba(168,85,247,0.15))` }}
+                  initial={{ height: 0 }}
+                  animate={{ height: `${h}%` }}
+                  transition={{ duration: 0.6, delay: i * 0.05, ease: 'easeOut' }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 p-6 pt-4">
+          <h3 className="text-white font-bold text-[18px] mb-1.5">Relationship Pulse</h3>
+          <p className="text-white/35 text-[14px] leading-relaxed">Visualize emotional growth across your journey.</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function RoadmapSection() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const scrollProgress = useMotionValue(0)
+  const inView = useInView(sectionRef, { once: false, margin: '-100px' })
+
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const rect = el.getBoundingClientRect()
+            const viewH = window.innerHeight
+            const progress = Math.min(1, Math.max(0, 1 - (rect.bottom - viewH) / (rect.height + viewH)))
+            scrollProgress.set(progress)
+          }
+        })
+      },
+      { threshold: Array.from({ length: 20 }, (_, i) => i / 19) }
+    )
+    observer.observe(el)
+
+    const onScroll = () => {
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const viewH = window.innerHeight
+      const progress = Math.min(1, Math.max(0, (viewH - rect.top) / (rect.height + viewH)))
+      scrollProgress.set(progress)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { observer.disconnect(); window.removeEventListener('scroll', onScroll) }
+  }, [scrollProgress])
+
+  const steps = [
+    {
+      num: '01',
+      title: 'Create Your Memory Universe',
+      desc: 'Create your private memory space where every moment is securely stored forever.',
+      visual: 'folder' as const,
+    },
+    {
+      num: '02',
+      title: 'Invite the People You Love',
+      desc: 'Build a shared universe with friends, family, or your partner and preserve memories together.',
+      visual: 'avatars' as const,
+    },
+    {
+      num: '03',
+      title: 'Capture Every Memory',
+      desc: 'Upload photos, videos, voice notes, journals and milestones into your personal galaxy.',
+      visual: 'photos' as const,
+    },
+    {
+      num: '04',
+      title: 'Relive Them Forever',
+      desc: 'AI transforms your memories into storybooks, constellations, timelines and emotional insights that grow with time.',
+      visual: 'storybook' as const,
+    },
+  ]
+
+  return (
+    <div ref={sectionRef}>
+      {/* Header */}
+      <div className="text-center mb-6">
+        <motion.span
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[10px] font-bold tracking-[0.15em] uppercase text-neonPink mb-3"
+        >
+          How It Works
+        </motion.span>
+        <motion.h2
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="font-serif-hero text-[2.5rem] md:text-[3.5rem] lg:text-[64px] font-bold text-white leading-[1.05] tracking-[-0.03em] max-w-[900px] mx-auto"
+          style={{ marginBottom: '12px' }}
+        >
+          Simple steps to{' '}
+          <span className="gradient-text-universe animate-preserve-glow">preserve</span>
+          <br />
+          your memories forever.
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+          className="text-[17px] font-normal text-[#A7A0B8] max-w-[700px] mx-auto leading-[1.65]"
+        >
+          Create your own digital universe where every memory becomes a star, every story becomes a chapter, and every relationship lasts forever.
+        </motion.p>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative max-w-5xl mx-auto">
+        {/* Animated center line */}
+        <div className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-[3px] rounded-full overflow-hidden hidden md:block"
+          style={{ background: 'rgba(255,77,184,0.08)' }}>
+          <motion.div
+            className="w-full rounded-full origin-top"
+            style={{
+              background: 'linear-gradient(180deg, #FF4DB8, #A855F7, #FF4DB8)',
+              scaleY: scrollProgress,
+              height: '100%',
+              boxShadow: '0 0 10px rgba(255,77,184,0.35), 0 0 25px rgba(168,85,247,0.15)',
+            }}
+          />
+        </div>
+
+        {/* Steps */}
+        <div className="space-y-5 md:space-y-7">
+          {steps.map((step, i) => (
+            <TimelineStep key={step.num} step={step} index={i} scrollProgress={scrollProgress} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TimelineStep({ step, index, scrollProgress }: { step: { num: string; title: string; desc: string; visual: string }; index: number; scrollProgress: any }) {
+  const isLeft = index % 2 === 0
+  const nodeRef = useRef<HTMLDivElement>(null)
+  const [hovered, setHovered] = useState(false)
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
+  const rotateX = useTransform(springY, (v: number) => -v * 0.015)
+  const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.015), { stiffness: 150, damping: 20 })
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!nodeRef.current) return
+    const r = nodeRef.current.getBoundingClientRect()
+    mouseX.set(e.clientX - (r.left + r.width / 2))
+    mouseY.set(e.clientY - (r.top + r.height / 2))
+  }
+
+  return (
+    <div className="relative">
+      {/* Mobile: stacked layout */}
+      <div className="md:hidden flex flex-col items-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: index * 0.12 }}
+          className="relative z-10"
+        >
+          <div className="w-9 h-9 rounded-full flex items-center justify-center relative"
+            style={{
+              background: 'rgba(18,10,35,0.8)',
+              border: '2px solid rgba(255,77,184,0.4)',
+              boxShadow: '0 0 16px rgba(255,77,184,0.25), 0 0 30px rgba(168,85,247,0.1)',
+            }}>
+            <span className="text-[10px] font-bold text-neonPink">{step.num}</span>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: index * 0.12 + 0.1 }}
+          className="text-center max-w-md px-4"
+        >
+          <h3 className="text-white font-bold text-[19px] mb-1.5">{step.title}</h3>
+          <p className="text-white/40 text-[14px] leading-relaxed">{step.desc}</p>
+        </motion.div>
+
+        <motion.div
+          ref={nodeRef}
+          initial={{ opacity: 0, y: 30, scale: 0.96, filter: 'blur(6px)' }}
+          whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: index * 0.12 + 0.2 }}
+          onMouseMove={handleMouse}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+          className="w-full max-w-[300px]"
+          style={{ perspective: 800 }}
+        >
+          <StepVisual step={step} hovered={hovered} rotateX={rotateX} rotateY={rotateY} />
+        </motion.div>
+      </div>
+
+      {/* Desktop: alternating layout */}
+      <div className="hidden md:grid md:grid-cols-[1fr_56px_1fr] items-center">
+        {/* Left content */}
+        <div className={`${isLeft ? '' : 'order-3'}`}>
+          {isLeft ? (
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: index * 0.1 }}
+              className="pr-8 text-right"
+            >
+              <h3 className="text-white font-bold text-[21px] mb-1.5">{step.title}</h3>
+              <p className="text-white/40 text-[14px] leading-relaxed max-w-[300px] ml-auto">{step.desc}</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              ref={nodeRef}
+              initial={{ opacity: 0, x: 30, scale: 0.96, filter: 'blur(6px)' }}
+              whileInView={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: index * 0.1 + 0.15 }}
+              onMouseMove={handleMouse}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+              className="pl-8"
+              style={{ perspective: 800 }}
+            >
+              <StepVisual step={step} hovered={hovered} rotateX={rotateX} rotateY={rotateY} />
+            </motion.div>
+          )}
+        </div>
+
+        {/* Center node */}
+        <div className="flex justify-center order-2">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: index * 0.1 + 0.05 }}
+            className="relative z-10"
+          >
+            <div className="w-10 h-10 rounded-full flex items-center justify-center relative"
+              style={{
+                background: 'rgba(18,10,35,0.8)',
+                border: '2px solid rgba(255,77,184,0.4)',
+                boxShadow: '0 0 16px rgba(255,77,184,0.25), 0 0 30px rgba(168,85,247,0.1)',
+              }}>
+              <span className="text-[11px] font-bold text-neonPink">{step.num}</span>
+              <motion.div
+                className="absolute inset-[-4px] rounded-full"
+                style={{ border: '1px solid rgba(255,77,184,0.15)' }}
+                animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: index * 0.5 }}
+              />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Right content */}
+        <div className={`${isLeft ? 'order-3' : ''}`}>
+          {isLeft ? (
+            <motion.div
+              ref={nodeRef}
+              initial={{ opacity: 0, x: 30, scale: 0.96, filter: 'blur(6px)' }}
+              whileInView={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: index * 0.1 + 0.15 }}
+              onMouseMove={handleMouse}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => { setHovered(false); mouseX.set(0); mouseY.set(0) }}
+              className="pl-8"
+              style={{ perspective: 800 }}
+            >
+              <StepVisual step={step} hovered={hovered} rotateX={rotateX} rotateY={rotateY} />
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: index * 0.1 }}
+              className="pr-8 text-left"
+            >
+              <h3 className="text-white font-bold text-[21px] mb-1.5">{step.title}</h3>
+              <p className="text-white/40 text-[14px] leading-relaxed max-w-[300px]">{step.desc}</p>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StepVisual({ step, hovered, rotateX, rotateY }: { step: { visual: string; num: string }; hovered: boolean; rotateX: any; rotateY: any }) {
+  return (
+    <motion.div
+      className="relative rounded-[26px] overflow-hidden aspect-[2/1]"
+      style={{
+        background: 'rgba(18,10,35,0.55)',
+        backdropFilter: 'blur(30px)',
+        WebkitBackdropFilter: 'blur(30px)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        rotateX: hovered ? rotateX : 0,
+        rotateY: hovered ? rotateY : 0,
+        transformStyle: 'preserve-3d',
+      }}
+      animate={{
+        y: hovered ? -6 : 0,
+        boxShadow: hovered
+          ? '0 24px 60px -12px rgba(0,0,0,0.5), 0 0 50px rgba(255,77,184,0.1), inset 0 1px 0 rgba(255,255,255,0.08)'
+          : '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+        borderColor: hovered ? 'rgba(255,77,184,0.15)' : 'rgba(255,255,255,0.06)',
+      }}
+      transition={{ type: 'spring', stiffness: 200, damping: 22 }}
+    >
+      {/* Reflection sweep */}
+      <motion.div className="absolute inset-0 pointer-events-none z-10"
+        style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.03) 50%, transparent 65%)' }}
+        animate={{ x: hovered ? ['0%', '120%'] : '-120%' }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+      />
+
+      {/* Step-specific visual */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {step.visual === 'folder' && <FolderVisual />}
+        {step.visual === 'avatars' && <AvatarsVisual />}
+        {step.visual === 'photos' && <PhotosVisual />}
+        {step.visual === 'storybook' && <StoryVisual />}
+      </div>
+    </motion.div>
+  )
+}
+
+function FolderVisual() {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <motion.div className="relative scale-[0.55]"
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}>
+        {/* Folder body */}
+        <div className="w-[120px] h-[80px] rounded-lg relative"
+          style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.2)' }}>
+          {/* Folder tab */}
+          <div className="absolute top-[-8px] left-3 w-[40px] h-[8px] rounded-t-md"
+            style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.2)', borderBottom: 'none' }} />
+          {/* Stars inside */}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <motion.div key={i} className="absolute rounded-full bg-white"
+              style={{ left: `${20 + i * 18}%`, top: `${30 + (i % 2) * 25}%`, width: 2 + (i % 2), height: 2 + (i % 2) }}
+              animate={{ opacity: [0.2, 0.8, 0.2], scale: [0.8, 1.3, 0.8] }}
+              transition={{ duration: 2 + i * 0.5, repeat: Infinity, delay: i * 0.3 }}
+            />
+          ))}
+        </div>
+        {/* Glow */}
+        <div className="absolute inset-[-20px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 60%)' }} />
+      </motion.div>
+    </div>
+  )
+}
+
+function AvatarsVisual() {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-[160px] h-[100px] scale-[0.55]">
+        {/* Avatar cards */}
+        {[
+          { x: 10, y: 20, color: '#FF4DB8', delay: 0 },
+          { x: 55, y: 10, color: '#A855F7', delay: 0.3 },
+          { x: 100, y: 25, color: '#6366F1', delay: 0.6 },
+        ].map((a, i) => (
+          <motion.div key={i} className="absolute w-[44px] h-[44px] rounded-full"
+            style={{
+              left: a.x, top: a.y,
+              background: `linear-gradient(135deg, ${a.color}40, ${a.color}20)`,
+              border: `1.5px solid ${a.color}30`,
+            }}
+            animate={{ y: [0, -4, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 3, repeat: Infinity, delay: a.delay, ease: 'easeInOut' }}
+          />
+        ))}
+        {/* Connection lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          <motion.line x1="32" y1="42" x2="77" y2="32" stroke="rgba(255,77,184,0.2)" strokeWidth="1"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ duration: 1.5, delay: 0.5 }} />
+          <motion.line x1="77" y1="32" x2="122" y2="47" stroke="rgba(168,85,247,0.2)" strokeWidth="1"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ duration: 1.5, delay: 0.8 }} />
+        </svg>
+        {/* Heart */}
+        <motion.div className="absolute text-[10px]"
+          style={{ left: 68, top: 45 }}
+          animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.4, 0.8, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 1.2 }}
+        >
+          <Heart className="w-3 h-3 text-neonPink fill-current" />
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+function PhotosVisual() {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-[150px] h-[100px] scale-[0.55]">
+        {[
+          { x: 5, y: 10, rot: -5, color: '#FF4DB8' },
+          { x: 40, y: 5, rot: 3, color: '#A855F7' },
+          { x: 75, y: 15, rot: -2, color: '#6366F1' },
+        ].map((p, i) => (
+          <motion.div key={i} className="absolute w-[50px] h-[38px] rounded-md overflow-hidden"
+            style={{
+              left: p.x, top: p.y,
+              rotate: `${p.rot}deg`,
+              background: `linear-gradient(135deg, ${p.color}15, ${p.color}08)`,
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: `0 4px 15px rgba(0,0,0,0.2), 0 0 20px ${p.color}10`,
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 + i * 0.2 }}
+          >
+            <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${p.color}10, transparent)` }} />
+          </motion.div>
+        ))}
+        {/* Sparkles */}
+        {[
+          { x: 100, y: 5, delay: 0.5 },
+          { x: 20, y: 60, delay: 1 },
+          { x: 120, y: 65, delay: 1.5 },
+        ].map((s, i) => (
+          <motion.div key={i} className="absolute w-1.5 h-1.5 rounded-full bg-white"
+            style={{ left: s.x, top: s.y }}
+            animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.2, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity, delay: s.delay }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StoryVisual() {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-[130px] h-[95px] scale-[0.55]">
+        {/* Mini book */}
+        <motion.div className="w-full h-full rounded-lg p-3 relative"
+          style={{
+            background: 'linear-gradient(145deg, rgba(30,18,50,0.7), rgba(20,12,38,0.5))',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+          }}
+          animate={{ rotateY: [0, 2, 0, -2, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="w-3 h-3 rounded flex items-center justify-center"
+              style={{ background: 'rgba(255,77,184,0.15)' }}>
+              <Sparkles className="w-2 h-2 text-neonPink" />
+            </div>
+            <span className="text-[7px] text-white/40">Chapter 1</span>
+          </div>
+          <div className="space-y-1">
+            {[0.8, 0.6, 0.7, 0.5, 0.65].map((w, i) => (
+              <div key={i} className="h-[2px] rounded-full" style={{ width: `${w * 100}%`, background: 'rgba(255,255,255,0.08)' }} />
+            ))}
+          </div>
+        </motion.div>
+        {/* Constellation dots */}
+        {[
+          { x: -10, y: 10, d: 0.8 },
+          { x: 135, y: 15, d: 1.2 },
+          { x: 125, y: 80, d: 1.6 },
+        ].map((d, i) => (
+          <motion.div key={i} className="absolute w-1 h-1 rounded-full bg-neonPurple/50"
+            style={{ left: d.x, top: d.y }}
+            animate={{ opacity: [0.2, 0.6, 0.2] }}
+            transition={{ duration: 2.5, repeat: Infinity, delay: d.d }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TimelineSection() {
+  const steps = [
+    { num: '01', title: 'Create Your Universe', desc: 'Build a private cosmic space tailored to your story.', color: 'from-pink-500/20 to-rose-500/20', border: 'border-pink-500/20' },
+    { num: '02', title: 'Invite Your Constellation', desc: 'Bring your loved ones into your shared galaxy.', color: 'from-purple-500/20 to-violet-500/20', border: 'border-purple-500/20' },
+    { num: '03', title: 'Preserve Every Moment', desc: 'Upload memories — photos, videos, journals, and more.', color: 'from-indigo-500/20 to-blue-500/20', border: 'border-indigo-500/20' },
+    { num: '04', title: 'Relive Among the Stars', desc: 'AI transforms your memories into cinematic stories.', color: 'from-pink-500/15 to-purple-500/15', border: 'border-pink-400/15' },
+  ]
+
+  return (
+    <div>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+        className="text-center mb-16"
+      >
+        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[10px] font-bold tracking-[0.15em] uppercase text-neonPink mb-5">
+          How It Works
+        </span>
+        <h2 className="font-serif-hero text-3xl md:text-[2.75rem] font-bold text-white leading-tight">
+          Your journey through the <span className="gradient-text-universe">cosmos</span>
+        </h2>
+      </motion.div>
+
+      <div className="grid md:grid-cols-4 gap-6">
+        {steps.map((step, i) => (
+          <motion.div
+            key={step.num}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: i * 0.12 }}
+            className="relative"
+          >
+            {/* Connector line */}
+            {i < steps.length - 1 && (
+              <div className="hidden md:block absolute top-8 left-full w-full h-[1px] bg-gradient-to-r from-white/[0.08] to-transparent z-0" />
+            )}
+
+            <div className="feature-card p-6 relative z-10">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} border ${step.border} flex items-center justify-center mb-4`}>
+                <span className="text-[11px] font-bold text-white/70">{step.num}</span>
+              </div>
+              <h3 className="text-[15px] font-bold text-white mb-2">{step.title}</h3>
+              <p className="text-[13px] text-white/35 leading-relaxed">{step.desc}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StoryBookShowcase() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8 }}
+      className="text-center"
+    >
+      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[10px] font-bold tracking-[0.15em] uppercase text-neonPink mb-5">
+        AI StoryBook
+      </span>
+      <h2 className="font-serif-hero text-3xl md:text-[2.75rem] font-bold text-white leading-tight mb-5">
+        Your memories become <span className="gradient-text-universe">cinematic stories</span>
+      </h2>
+      <p className="text-[15px] text-white/35 max-w-lg mx-auto mb-12 leading-relaxed">
+        Our AI reads through your memories and weaves them into beautiful, shareable storybooks that capture the essence of your most precious moments.
+      </p>
+
+      {/* Mock StoryBook UI */}
+      <motion.div
+        className="relative max-w-2xl mx-auto"
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        <div className="feature-card p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neonPink/20 to-neonPurple/20 border border-white/[0.08] flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-neonPink" />
+            </div>
+            <div className="text-left">
+              <h4 className="text-[13px] font-bold text-white">Summer in Santorini</h4>
+              <p className="text-[11px] text-white/30">Chapter 1 of 12 &middot; Generated by AI</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 text-left">
+            <div className="h-[1px] bg-white/[0.04]" />
+            <p className="text-[14px] text-white/50 leading-relaxed italic font-light">
+              &ldquo;The sun painted the whitewashed buildings in shades of gold as you stepped onto the balcony for the first time. The Aegean breeze carried the scent of jasmine, and in that moment, the world seemed to pause — just for you two.&rdquo;
+            </p>
+            <div className="flex gap-3">
+              {[
+                'bg-gradient-to-br from-pink-500/10 to-purple-500/10',
+                'bg-gradient-to-br from-purple-500/10 to-indigo-500/10',
+                'bg-gradient-to-br from-indigo-500/10 to-pink-500/10',
+              ].map((bg, i) => (
+                <div key={i} className={`w-20 h-16 rounded-xl ${bg} border border-white/[0.05]`} />
+              ))}
+            </div>
+            <div className="h-[1px] bg-white/[0.04]" />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function LettersSection() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8 }}
+      className="text-center"
+    >
+      <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-[10px] font-bold tracking-[0.15em] uppercase text-neonPink mb-5">
+        Time Capsule Letters
+      </span>
+      <h2 className="font-serif-hero text-3xl md:text-[2.75rem] font-bold text-white leading-tight mb-5">
+        Letters that <span className="gradient-text-universe">transcend time</span>
+      </h2>
+      <p className="text-[15px] text-white/35 max-w-lg mx-auto mb-12 leading-relaxed">
+        Write letters to your future self, your partner, or your children. Schedule them to arrive at the perfect moment — years from now.
+      </p>
+
+      {/* Mock Letter UI */}
+      <div className="max-w-lg mx-auto feature-card p-6 md:p-8 text-left">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center text-[14px]">
+            💌
+          </div>
+          <div>
+            <h4 className="text-[13px] font-bold text-white">Letter to Future Us</h4>
+            <p className="text-[11px] text-white/30">Arrives December 25, 2030</p>
+          </div>
+        </div>
+        <div className="h-[1px] bg-white/[0.04] mb-4" />
+        <p className="text-[14px] text-white/45 leading-relaxed italic font-light">
+          &ldquo;By the time you read this, we will have built a lifetime of memories. Remember this moment — the excitement, the hope, the love that started it all...&rdquo;
+        </p>
+      </div>
+    </motion.div>
   )
 }

@@ -13,7 +13,8 @@ import {
   SkipForward,
   Volume2
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
 
 import { useSpaceData } from '@/hooks/useSpaceData'
 
@@ -25,6 +26,7 @@ export default function Sidebar() {
   const [isPlaying, setIsPlaying] = useState(true)
   const { spaceData } = useSpaceData()
   const themeColor = spaceData.themeColor || 'pink'
+  const isStoryBook = pathname === '/storybook'
 
   // Navigation Items
   const items = [
@@ -158,19 +160,37 @@ export default function Sidebar() {
         <div className="flex flex-col flex-1 overflow-hidden">
           
           {/* Logo / Brand Header */}
-          <div className={`flex items-center gap-2.5 px-2 mt-2 md:mt-0 mb-6 transition-all duration-300 ${
-            isCollapsed ? 'justify-center' : ''
-          }`}>
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${activeTheme.gradient} flex items-center justify-center flex-shrink-0 ${activeTheme.glow}`}>
-              <Heart className="w-4.5 h-4.5 text-white fill-current animate-pulse" />
-            </div>
+          <motion.button
+            onClick={() => { if (pathname !== '/') router.push('/') }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            animate={pathname === '/' ? { boxShadow: ['0 0 0px rgba(168,85,247,0)', '0 0 14px rgba(168,85,247,0.35)', '0 0 0px rgba(168,85,247,0)'] } : {}}
+            transition={{ duration: 0.2 }}
+            aria-label="Go to MemoryVerse Home"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (pathname !== '/') router.push('/') } }}
+            className={`flex items-center gap-2.5 px-2 mt-2 md:mt-0 mb-6 rounded-xl transition-all duration-200 group outline-none focus-visible:ring-2 focus-visible:ring-purple-400/50 ${
+              isCollapsed ? 'justify-center' : ''
+            } ${
+              pathname === '/'
+                ? 'border border-purple-400/20 bg-purple-500/5'
+                : 'border border-transparent hover:border-white/10 hover:bg-white/[0.03]'
+            }`}
+          >
+            <motion.div
+              className={`${isStoryBook ? 'w-9 h-9' : 'w-8 h-8'} rounded-lg bg-gradient-to-tr ${activeTheme.gradient} flex items-center justify-center flex-shrink-0 ${activeTheme.glow} transition-shadow duration-200 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]`}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Heart className={`${isStoryBook ? 'w-5 h-5' : 'w-4.5 h-4.5'} text-white fill-current animate-pulse`} />
+            </motion.div>
             
             {!isCollapsed && (
-              <span className="text-md font-bold tracking-tight bg-gradient-to-r from-white to-pink-100 bg-clip-text text-transparent truncate">
+              <span className={`${isStoryBook ? 'text-[17px]' : 'text-md'} font-bold tracking-tight bg-gradient-to-r from-white to-pink-100 bg-clip-text text-transparent truncate transition-all duration-200 group-hover:brightness-125`}>
                 Forever Remembered
               </span>
             )}
-          </div>
+          </motion.button>
 
           {/* DYNAMIC SPACE DETAILS */}
           <div className={`px-2 mb-6 transition-all duration-300 ${isCollapsed ? 'flex justify-center' : ''}`}>
@@ -179,13 +199,13 @@ export default function Sidebar() {
                 {spaceData.relationshipEmoji}
               </div>
             ) : (
-              <div className="p-3.5 rounded-2xl border border-white/10 shadow-inner flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)' }}>
-                <div className="text-xl">{spaceData.relationshipEmoji}</div>
+              <div className={`${isStoryBook ? 'p-4 gap-3.5' : 'p-3.5 gap-3'} rounded-2xl border border-white/10 shadow-inner flex items-center`} style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)' }}>
+                <div className={`${isStoryBook ? 'text-2xl' : 'text-xl'}`}>{spaceData.relationshipEmoji}</div>
                 <div className="overflow-hidden">
-                  <span className="text-xs font-bold text-white block truncate leading-tight">
+                  <span className={`${isStoryBook ? 'text-sm' : 'text-xs'} font-bold text-white block truncate leading-tight`}>
                     {spaceData.spaceName}
                   </span>
-                  <span className={`text-[9px] font-extrabold uppercase tracking-widest block mt-0.5 ${activeTheme.text}`}>
+                  <span className={`${isStoryBook ? 'text-[10px]' : 'text-[9px]'} font-extrabold uppercase tracking-widest block mt-0.5 ${activeTheme.text}`}>
                     {spaceData.selectedRelation === 'couple' ? 'Couple Space' : spaceData.selectedRelation === 'family' ? 'Family Space' : 'Friends Space'}
                   </span>
                 </div>
@@ -208,12 +228,12 @@ export default function Sidebar() {
                     : 'text-gray-400 hover:text-white hover:bg-white/5 hover:translate-x-1'
                 }`}
               >
-                <span className="text-lg group-hover:scale-115 transition-transform duration-300">
+                <span className={`${isStoryBook ? 'text-xl' : 'text-lg'} group-hover:scale-115 transition-transform duration-300`}>
                   {item.emoji}
                 </span>
 
                 {!isCollapsed && (
-                  <span className="text-xs font-medium">{item.label}</span>
+                  <span className={`${isStoryBook ? 'text-sm' : 'text-xs'} font-medium`}>{item.label}</span>
                 )}
 
                 {/* Collapsed Mode Tooltip */}
@@ -259,10 +279,10 @@ export default function Sidebar() {
                 </div>
 
                 <div className="flex-1 overflow-hidden">
-                  <span className="text-[10px] font-extrabold text-white block truncate leading-none">
+                  <span className={`${isStoryBook ? 'text-[12px]' : 'text-[10px]'} font-extrabold text-white block truncate leading-none`}>
                     Cosmic Whispers
                   </span>
-                  <span className="text-[8px] text-gray-500 font-bold uppercase mt-0.5 block truncate">
+                  <span className={`${isStoryBook ? 'text-[9px]' : 'text-[8px]'} text-gray-500 font-bold uppercase mt-0.5 block truncate`}>
                     Stardust Harmony
                   </span>
                 </div>
@@ -295,7 +315,7 @@ export default function Sidebar() {
             <span className="text-lg group-hover:scale-115 transition-transform">🚪</span>
             
             {!isCollapsed && (
-              <span className="text-xs font-medium">Logout</span>
+              <span className={`${isStoryBook ? 'text-sm' : 'text-xs'} font-medium`}>Logout</span>
             )}
 
             {isCollapsed && (

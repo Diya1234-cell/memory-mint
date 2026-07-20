@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { inter, plusJakartaSans, geist } from "@/lib/fonts";
+import { inter, plusJakartaSans, geist, playfairDisplay, spaceGrotesk } from "@/lib/fonts";
 import "@/styles/globals.css";
 import { GalaxyBackground } from "@/components/ui/Background";
 
@@ -21,12 +21,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${plusJakartaSans.variable} ${geist.variable}`}
+      className={`dark ${inter.variable} ${plusJakartaSans.variable} ${geist.variable} ${playfairDisplay.variable} ${spaceGrotesk.variable}`}
       suppressHydrationWarning
     >
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500&family=Geist:wght@400;500;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500&family=Playfair+Display:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <link
