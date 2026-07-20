@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Heart } from 'lucide-react'
 
@@ -29,6 +29,11 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [galaxyHovered, setGalaxyHovered] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const activeGlow = themeGlows[themeColor] || themeGlows.pink
 
@@ -116,8 +121,8 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
       {/* L1: Deep space */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#120a28_0%,#04020a_100%)] pointer-events-none -z-30" />
 
-      {/* L2: Distant twinkling stars */}
-      {bgStars.map((s, i) => (
+      {/* L2: Distant twinkling stars — client-only to avoid SSR hydration mismatch */}
+      {isMounted && bgStars.map((s, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full bg-white pointer-events-none -z-20"
@@ -254,7 +259,9 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
           style={{
             left: m.left, top: m.top,
             x: mousePos.x * (0.6 + m.delay * 0.05),
-            y: mousePos.y * (0.6 + m.delay * 0.05)
+            y: mousePos.y * (0.6 + m.delay * 0.05),
+            width: m.w,
+            height: m.h
           }}
           animate={{
             y: [0, -(3 + m.delay * 0.5), 3 + m.delay * 0.3, 0],
@@ -264,7 +271,6 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
           transition={{ duration: 9 + m.delay * 1.5, repeat: Infinity, ease: "easeInOut" }}
           whileHover={{ scale: 1.55, zIndex: 50, rotate: 0, y: -12, boxShadow: `0 0 20px ${activeGlow.glow}` }}
           className="absolute bg-[#180a32]/90 p-[2px] pb-[5px] border border-white/[18%] rounded-[3px] shadow-2xl flex-shrink-0 cursor-pointer pointer-events-auto transition-shadow duration-300"
-          style={{ width: m.w, height: m.h }}
         >
           <div className="w-full h-[72%] bg-cover bg-center rounded-[2px] pointer-events-none" style={{ backgroundImage: `url('${m.img}')` }} />
 
@@ -277,8 +283,8 @@ export function MemoryGalaxy({ themeColor, coverPhoto, relationshipEmoji }: Memo
         </motion.div>
       ))}
 
-      {/* L10: Front drifting particles */}
-      {frontParticles.map((p, i) => (
+      {/* L10: Front drifting particles — client-only to avoid SSR hydration mismatch */}
+      {isMounted && frontParticles.map((p, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full pointer-events-none z-30"
