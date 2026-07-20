@@ -1,5 +1,4 @@
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
-import localFont from "next/font/local";
+import { Inter, Plus_Jakarta_Sans, Playfair_Display, Space_Grotesk } from "next/font/google";
 
 export const inter = Inter({
   subsets: ["latin"],
@@ -14,9 +13,20 @@ export const plusJakartaSans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-// Geist is available on Google Fonts but some next/font versions
-// may not resolve it. Use a Google Fonts CSS link as fallback
-// and define a local CSS variable.
+export const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
+});
+
+export const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-grotesk",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const geist = Inter({
   subsets: ["latin"],
   variable: "--font-geist",
