@@ -123,7 +123,7 @@ export default function MemoryGalaxyPreview() {
     return (
       <g key={s.label}>
         <motion.circle
-          cx={s.x} cy={s.y} r={s.r * 3}
+          cx={s.x} cy={s.y} r={(s.r ?? 1) * 3}
           fill={`rgba(168,85,247,${isCenter && isBright ? 0.06 : 0.02})`}
           animate={{
             r: isCenter && isBright ? [s.r * 3, s.r * 5, s.r * 3] : [s.r * 3, s.r * 3.5, s.r * 3],
@@ -132,7 +132,7 @@ export default function MemoryGalaxyPreview() {
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.circle
-          cx={s.x} cy={s.y} r={s.r * 2}
+          cx={s.x} cy={s.y} r={(s.r ?? 1) * 2}
           fill={`rgba(255,75,145,${isCenter && isBright ? 0.1 : 0.035})`}
           animate={{
             r: isCenter && isBright ? [s.r * 2, s.r * 3.5, s.r * 2] : [s.r * 2, s.r * 2.5, s.r * 2],
@@ -140,7 +140,7 @@ export default function MemoryGalaxyPreview() {
           transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.2 }}
         />
         <motion.circle
-          cx={s.x} cy={s.y} r={s.r}
+          cx={s.x} cy={s.y} r={s.r ?? 1}
           fill="#fff"
           animate={{
             r: isCenter && isBright ? [s.r, s.r * 1.4, s.r] : [s.r, s.r * 1.15, s.r],
@@ -149,7 +149,7 @@ export default function MemoryGalaxyPreview() {
           transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
         />
         <motion.circle
-          cx={s.x} cy={s.y} r={s.r * 0.4}
+          cx={s.x} cy={s.y} r={(s.r ?? 1) * 0.4}
           fill="rgba(255,255,255,0.8)"
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.1 }}

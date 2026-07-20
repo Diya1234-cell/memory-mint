@@ -424,7 +424,6 @@ function LettersContent() {
               letters={filtered}
               activeId={current.id}
               onSelect={loadLetter}
-              onPreview={setPreviewLetter}
             />
           )}
         </section>

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { inter, plusJakartaSans, geist, playfairDisplay, spaceGrotesk } from "@/lib/fonts";
 import "@/styles/globals.css";
 import { GalaxyBackground } from "@/components/ui/Background";
+import Providers from "@/providers/Providers";
 
 export const metadata: Metadata = {
   title: "MemoryVerse | Preserve Your Story",
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <GalaxyBackground />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
