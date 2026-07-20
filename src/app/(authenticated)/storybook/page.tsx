@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import {
-  Bookmark, ChevronLeft, ChevronRight, Download, Heart, Moon, Play, Pause, Share2, Sparkles, Telescope,
+  Bookmark, ChevronLeft, ChevronRight, Copy, Download, Edit3, FileText, Heart, Moon, Play, Pause, Pin, Share2, Sparkles, Star, Telescope, Trash2,
   Pencil, Check, X, Bold, Italic, Underline, Highlighter, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Quote, Undo2, Redo2, Link2, Smile,
 } from 'lucide-react'
@@ -610,47 +610,75 @@ function BookContent({ chapter, side, editMode, onStoryEdit, onCaptionEdit }: {
 
 /* ─── Chapter Carousel Card ─── */
 
-function ChapterCard({ ch, active, onClick }: { ch: StoryBookChapter; active: boolean; onClick: () => void }) {
+function ChapterCard({ ch, active, onClick, index, progress, onContextMenu }: {
+  ch: StoryBookChapter; active: boolean; onClick: () => void;
+  index: number; progress: number; onContextMenu: (e: React.MouseEvent) => void;
+}) {
   return (
-    <motion.button
+    <motion.div
       onClick={onClick}
-      className={`relative flex-shrink-0 rounded-xl overflow-hidden transition-all duration-500 glass-shimmer ${active ? 'ring-2 ring-pink-400/60' : 'ring-1 ring-white/10'}`}
+      onContextMenu={onContextMenu}
+      className={`relative flex-shrink-0 rounded-xl overflow-hidden cursor-pointer glass-shimmer group ${active ? 'ring-2 ring-pink-400/60' : 'ring-1 ring-white/10 hover:ring-white/20'}`}
       style={{
-        width: 165,
-        height: 118,
+        width: 175,
+        height: 160,
         background: active
           ? `linear-gradient(135deg, ${ch.color}3f, rgba(24,16,38,0.52))`
           : 'linear-gradient(135deg, rgba(255,255,255,0.055), rgba(24,16,38,0.45))',
         border: active ? `1px solid ${ch.color}88` : '1px solid rgba(255,255,255,0.08)',
-        boxShadow: active ? `0 0 32px ${ch.color}55, 0 10px 28px rgba(0,0,0,0.42), inset 0 1px rgba(255,255,255,0.15)` : '0 6px 18px rgba(0,0,0,0.26), inset 0 1px rgba(255,255,255,0.08)',
+        boxShadow: active
+          ? `0 0 32px ${ch.color}55, 0 10px 28px rgba(0,0,0,0.42), inset 0 1px rgba(255,255,255,0.15)`
+          : '0 6px 18px rgba(0,0,0,0.26), inset 0 1px rgba(255,255,255,0.08)',
       }}
-      whileHover={{ scale: 1.05, y: -3 }}
+      whileHover={{ scale: 1.03, y: -4 }}
       animate={{ y: active ? [0, -2, 0] : [0, -1, 0] }}
-      transition={{ y: { duration: active ? 2.6 : 3.5, repeat: Infinity, ease: 'easeInOut' } }}
+      transition={{
+        y: { duration: active ? 2.6 : 3.5, repeat: Infinity, ease: 'easeInOut' },
+        scale: { duration: 0.3, type: 'spring', stiffness: 300, damping: 25 },
+      }}
       whileTap={{ scale: 0.98 }}
     >
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.08]">
-          <img src={ch.images[0]?.src} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-110">
+          <img src={ch.images[0]?.src} alt="" className="w-full h-full object-cover opacity-[0.08] group-hover:opacity-[0.14] transition-opacity duration-500" />
         </div>
         {active && (
           <motion.div
             className="absolute inset-0"
-            style={{
-              background: `linear-gradient(135deg, ${ch.color}11, transparent)`,
-            }}
+            style={{ background: `linear-gradient(135deg, ${ch.color}11, transparent)` }}
             animate={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           />
         )}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.45) 100%)' }} />
       </div>
       <div className="relative z-10 h-full flex flex-col justify-between p-3">
-        <span className="text-[13px]">{ch.emoji}</span>
-        <div>
-          <p className={`text-[10px] font-medium leading-tight text-left ${active ? 'text-white/90' : 'text-white/50'}`}>
+        <div className="flex items-center justify-between">
+          <span className="text-[14px]">{ch.emoji}</span>
+          <span className="text-[7px] font-medium text-white/25 tracking-wider uppercase">{ch.chapter}</span>
+        </div>
+        <div className="flex-1 flex flex-col justify-center gap-0.5 min-h-0">
+          <p className={`text-[11px] font-semibold leading-tight text-left truncate transition-colors duration-300 ${active ? 'text-white/95' : 'text-white/55 group-hover:text-white/80'}`}>
             {ch.title}
           </p>
-          <p className="text-[8px] text-white/35 mt-1 text-left">{ch.date}</p>
+          <p className="text-[8px] text-white/28 text-left truncate leading-tight">{ch.caption}</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="inline-flex px-1.5 py-[1px] rounded-full text-[7px] font-medium"
+              style={{
+                background: `linear-gradient(135deg, ${ch.color}22, transparent)`,
+                border: `0.5px solid ${ch.color}33`,
+                color: ch.color,
+              }}>
+              {ch.mood.split(' ')[0]}
+            </span>
+            {ch.favorite && <Star className="w-2 h-2 fill-amber-400 text-amber-400" />}
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-[7px] text-white/28 truncate">{ch.date}</span>
+          <div className="w-10 h-[2px] rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: `linear-gradient(to right, ${ch.color}, #ff4b91)` }} />
+          </div>
         </div>
       </div>
       {active && (
@@ -661,7 +689,69 @@ function ChapterCard({ ch, active, onClick }: { ch: StoryBookChapter; active: bo
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         />
       )}
-    </motion.button>
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ boxShadow: `inset 0 0 1px ${ch.color}44, 0 0 8px ${ch.color}22` }} />
+    </motion.div>
+  )
+}
+
+/* ─── Chapter Context Menu ─── */
+
+function ChapterContextMenu({ x, y, chapter, onClose, onEdit, onDuplicate, onDelete, onFavorite, onPin }: {
+  x: number; y: number; chapter: StoryBookChapter; onClose: () => void;
+  onEdit: () => void; onDuplicate: () => void; onDelete: () => void;
+  onFavorite: () => void; onPin: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [adjustedPos, setAdjustedPos] = useState({ x, y })
+
+  useEffect(() => {
+    if (!menuRef.current) return
+    const rect = menuRef.current.getBoundingClientRect()
+    const nx = x + rect.width > window.innerWidth ? x - rect.width : x
+    const ny = y + rect.height > window.innerHeight ? y - rect.height : y
+    setAdjustedPos({ x: Math.max(8, nx), y: Math.max(8, ny) })
+  }, [x, y])
+
+  return (
+    <motion.div
+      ref={menuRef}
+      className="fixed z-50 min-w-[180px] rounded-xl overflow-hidden py-1"
+      style={{
+        left: adjustedPos.x, top: adjustedPos.y,
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(24,16,38,0.85))',
+        backdropFilter: 'blur(30px) saturate(145%)',
+        WebkitBackdropFilter: 'blur(30px) saturate(145%)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(139,92,246,0.15), inset 0 1px rgba(255,255,255,0.08)',
+      }}
+      initial={{ opacity: 0, scale: 0.92, y: -5 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: -3 }}
+      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button onClick={() => { onEdit(); onClose() }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white/90 hover:bg-white/8 transition-all duration-200">
+        <Edit3 className="w-3.5 h-3.5" /><span>Rename</span>
+      </button>
+      <button onClick={() => { onEdit(); onClose() }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white/90 hover:bg-white/8 transition-all duration-200">
+        <FileText className="w-3.5 h-3.5" /><span>Edit Contents</span>
+      </button>
+      <button onClick={() => { onDuplicate(); onClose() }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white/90 hover:bg-white/8 transition-all duration-200">
+        <Copy className="w-3.5 h-3.5" /><span>Duplicate</span>
+      </button>
+      <button onClick={() => { onFavorite(); onClose() }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white/90 hover:bg-white/8 transition-all duration-200">
+        {chapter.favorite ? <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> : <Heart className="w-3.5 h-3.5" />}
+        <span>{chapter.favorite ? 'Unfavorite' : 'Favorite'}</span>
+      </button>
+      <button onClick={() => { onPin(); onClose() }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-white/60 hover:text-white/90 hover:bg-white/8 transition-all duration-200">
+        <Pin className="w-3.5 h-3.5" /><span>Pin to Top</span>
+      </button>
+      <div className="my-1 h-px bg-white/8" />
+      <button onClick={() => { onDelete(); onClose() }} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200">
+        <Trash2 className="w-3.5 h-3.5" /><span>Delete</span>
+      </button>
+    </motion.div>
   )
 }
 
@@ -753,7 +843,7 @@ function RightPanel({ chapter, page, total, bookmarked, onBookmark, editMode, on
 /* ─── Main Component ─── */
 
 export default function StoryBookPage() {
-  const { chapters: uploadedChapters, updateChapterStory, updateChapterCaption } = useStoryBook()
+  const { chapters: uploadedChapters, updateChapterStory, updateChapterCaption, updateChapterMeta, deleteChapter, duplicateChapter, reorderChapters } = useStoryBook()
   const allChapters = useMemo(() => {
     if (uploadedChapters.length > 0) return uploadedChapters
     return DEFAULT_CHAPTERS
@@ -766,6 +856,9 @@ export default function StoryBookPage() {
   const [bookmarked, setBookmarked] = useState(false)
   const [isFlipping, setIsFlipping] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; chapterIndex: number } | null>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const carouselRef = useRef<HTMLDivElement>(null)
   const chapter = allChapters[page] || allChapters[0]
@@ -816,14 +909,52 @@ export default function StoryBookPage() {
   }, [handleKeyDown])
 
   useEffect(() => {
+    if (!contextMenu) return
+    const close = () => setContextMenu(null)
+    window.addEventListener('click', close)
+    window.addEventListener('contextmenu', close)
+    return () => { window.removeEventListener('click', close); window.removeEventListener('contextmenu', close) }
+  }, [contextMenu])
+
+  useEffect(() => {
+    if (page >= allChapters.length) {
+      setPage(Math.max(0, allChapters.length - 1))
+    }
+  }, [allChapters.length, page])
+
+  useEffect(() => {
     const el = carouselRef.current
     if (!el) return
-    const cards = el.querySelectorAll('button')
+    const cards = el.querySelectorAll('[data-carousel-card]')
     const target = cards[page]
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
   }, [page])
+
+  const updateArrowAvailability = useCallback(() => {
+    const el = carouselRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 8)
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 8)
+  }, [])
+
+  useEffect(() => {
+    const el = carouselRef.current
+    if (!el) return
+    updateArrowAvailability()
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+      e.preventDefault()
+      el.scrollBy({ left: e.deltaY > 0 ? 220 : -220, behavior: 'smooth' })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('scroll', updateArrowAvailability, { passive: true })
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('scroll', updateArrowAvailability)
+    }
+  }, [updateArrowAvailability, allChapters.length])
 
   const dustParticles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
     left: 5 + i * 4.5,
@@ -1145,14 +1276,39 @@ export default function StoryBookPage() {
       {/* ─── Bottom Chapter Carousel ─── */}
       <div className="relative z-20 pb-3 px-3 md:px-6">
         <div className="max-w-[1460px] mx-auto relative">
-          <div className="pointer-events-none absolute z-10 left-0 top-0 bottom-2 w-16 bg-gradient-to-r from-[#12071F] via-[#12071F]/80 to-transparent" />
-          <div className="pointer-events-none absolute z-10 right-0 top-0 bottom-2 w-20 bg-gradient-to-l from-[#12071F] via-[#12071F]/80 to-transparent" />
-          <button aria-label="Scroll chapters left" onClick={() => scrollCarousel(-1)} className="absolute z-20 left-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white" style={glassCard}>
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button aria-label="Scroll chapters right" onClick={() => scrollCarousel(1)} className="absolute z-20 right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white" style={glassCard}>
-            <ChevronRight className="h-4 w-4" />
-          </button>
+          <div className="absolute -top-1 left-1/4 w-1 h-1 rounded-full bg-purple-400/20" style={{ animation: 'constellationPulse 3s ease-in-out infinite' }} />
+          <div className="absolute -top-0.5 right-1/3 w-0.5 h-0.5 rounded-full bg-pink-300/15" style={{ animation: 'constellationPulse 4s ease-in-out infinite 1s' }} />
+          <div className="absolute -bottom-1 left-2/3 w-0.5 h-0.5 rounded-full bg-violet-300/20" style={{ animation: 'constellationPulse 5s ease-in-out infinite 2s' }} />
+          <div className="pointer-events-none absolute z-10 left-0 top-0 bottom-2 w-20 bg-gradient-to-r from-[#12071F] via-[#12071F]/80 to-transparent" />
+          <div className="pointer-events-none absolute z-10 right-0 top-0 bottom-2 w-24 bg-gradient-to-l from-[#12071F] via-[#12071F]/80 to-transparent" />
+          <motion.button
+            aria-label="Scroll chapters left"
+            onClick={() => scrollCarousel(-1)}
+            className="absolute z-20 left-2 top-1/2 -translate-y-1/2 rounded-full p-2.5 transition-all duration-300"
+            style={{
+              ...glassCard,
+              boxShadow: '0 0 20px rgba(139,92,246,0.15), 0 8px 24px rgba(0,0,0,0.3)',
+            }}
+            animate={{ opacity: canScrollLeft ? 1 : 0.25, scale: canScrollLeft ? 1 : 0.92 }}
+            whileHover={{ scale: 1.12, boxShadow: '0 0 30px rgba(168,85,247,0.35), 0 0 15px rgba(255,75,145,0.18)' }}
+            whileTap={{ scale: 0.93 }}
+          >
+            <ChevronLeft className="h-4 w-4 text-white/80" />
+          </motion.button>
+          <motion.button
+            aria-label="Scroll chapters right"
+            onClick={() => scrollCarousel(1)}
+            className="absolute z-20 right-2 top-1/2 -translate-y-1/2 rounded-full p-2.5 transition-all duration-300"
+            style={{
+              ...glassCard,
+              boxShadow: '0 0 20px rgba(139,92,246,0.15), 0 8px 24px rgba(0,0,0,0.3)',
+            }}
+            animate={{ opacity: canScrollRight ? 1 : 0.25, scale: canScrollRight ? 1 : 0.92 }}
+            whileHover={{ scale: 1.12, boxShadow: '0 0 30px rgba(168,85,247,0.35), 0 0 15px rgba(255,75,145,0.18)' }}
+            whileTap={{ scale: 0.93 }}
+          >
+            <ChevronRight className="h-4 w-4 text-white/80" />
+          </motion.button>
           <motion.div
             ref={carouselRef}
             className="storybook-carousel flex items-center overflow-x-auto pb-2 scroll-smooth"
@@ -1166,13 +1322,19 @@ export default function StoryBookPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="flex gap-3 px-12 pr-12 md:px-16 md:pr-16">
+            <div className="flex gap-3 px-14 pr-14 md:px-16 md:pr-16">
               {allChapters.map((ch, i) => (
-                <div key={ch.id} style={{ scrollSnapAlign: 'center' }}>
+                <div key={ch.id} data-carousel-card style={{ scrollSnapAlign: 'center' }}>
                   <ChapterCard
                     ch={ch}
                     active={i === page}
+                    index={i}
+                    progress={i < page ? 100 : i === page ? 75 : 0}
                     onClick={() => { if (!isFlipping) setPage(i) }}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setContextMenu({ x: e.clientX, y: e.clientY, chapterIndex: i })
+                    }}
                   />
                 </div>
               ))}
@@ -1288,6 +1450,32 @@ export default function StoryBookPage() {
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {contextMenu && (
+          <ChapterContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            chapter={allChapters[contextMenu.chapterIndex]}
+            onClose={() => setContextMenu(null)}
+            onEdit={() => {
+              setPage(contextMenu.chapterIndex)
+              setEditMode(true)
+            }}
+            onDuplicate={() => duplicateChapter(allChapters[contextMenu.chapterIndex].id)}
+            onDelete={() => {
+              deleteChapter(allChapters[contextMenu.chapterIndex].id)
+              setContextMenu(null)
+            }}
+            onFavorite={() => updateChapterMeta(allChapters[contextMenu.chapterIndex].id, { favorite: !allChapters[contextMenu.chapterIndex].favorite })}
+            onPin={() => {
+              if (contextMenu.chapterIndex > 0) {
+                reorderChapters(contextMenu.chapterIndex, 0)
+              }
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
   )
 }
