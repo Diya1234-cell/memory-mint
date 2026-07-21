@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '@/services/storageService'
 import { QRCodeSVG } from 'qrcode.react'
-import { useAuth } from '@/providers/AuthProvider'
-import { createSpace } from '@/services/spaceServices'
 import { 
   Heart, 
   Sparkles, 
@@ -37,8 +35,6 @@ const fontLink = "https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&d
 
 export default function CreateSpacePage() {
   const router = useRouter()
-  const { user } = useAuth()
-
   // Onboarding Wizard States
   const [step, setStep] = useState(1) // 1, 2, 3, or 4
   const [direction, setDirection] = useState(1) // for transition direction
@@ -74,13 +70,10 @@ export default function CreateSpacePage() {
   const [isCtaHovered, setIsCtaHovered] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-<<<<<<< HEAD
+  const [createError, setCreateError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const objectUrlRef = useRef<string | null>(null)
   const uploadVersionRef = useRef(0)
-=======
-  const [createError, setCreateError] = useState('')
->>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
 
   // Floating Cosmic Particles State
   const [particles] = useState(() => 
@@ -173,23 +166,12 @@ export default function CreateSpacePage() {
       setCreateError('You must be logged in to create a space.')
       return
     }
-<<<<<<< HEAD
-    let persistedSetupData: typeof setupData & { spaceId?: string } = setupData
-    if (user) {
-      const result = await createSpace(spaceName, user.uid, selectedRelation ?? 'couple', setupData)
-      if (result.success) {
-        persistedSetupData = { ...setupData, spaceId: result.id }
-      }
-    }
-    localStorage.setItem('memory-universe-setup', JSON.stringify(persistedSetupData))
-=======
     if (!selectedRelation) {
       setCreateError('Please select a relationship type.')
       return
     }
     setCreateError('')
     setIsLoading(true)
->>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
 
     const result = await createSpace(spaceName, user.uid, selectedRelation)
 
@@ -198,6 +180,21 @@ export default function CreateSpacePage() {
       setIsLoading(false)
       return
     }
+
+    const setupData = {
+      spaceName,
+      themeColor,
+      specialDate,
+      relationshipEmoji,
+      description,
+      category,
+      isPrivate,
+      coverPhoto,
+      selectedRelation,
+      invites,
+      spaceId: result.id,
+    }
+    localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
 
     setIsEnding(true)
     setTimeout(() => {
