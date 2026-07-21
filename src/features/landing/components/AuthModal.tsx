@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mail, Lock, User, Eye, EyeOff, ChevronDown,
@@ -25,11 +26,17 @@ const memoryThemes = ['Family', 'Friends', 'Travel', 'Relationship', 'Personal',
 const countries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Japan', 'India', 'Brazil', 'Other']
 
 export default function AuthModal() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<AuthMode>('login')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [agreed, setAgreed] = useState(false)
+
+  const handleNavigateToCreate = () => {
+    setOpen(false)
+    router.push('/create-space')
+  }
 
   useEffect(() => {
     const handler = () => setOpen(true)
@@ -142,7 +149,7 @@ export default function AuthModal() {
                       <a href="#" className="text-[12px] text-neonPink/70 hover:text-neonPink transition-colors font-medium">Forgot Password?</a>
                     </div>
 
-                    <button className="btn-cosmic-primary w-full text-[14px] mb-4">Continue Journey</button>
+                    <button onClick={handleNavigateToCreate} className="btn-cosmic-primary w-full text-[14px] mb-4">Continue Journey</button>
 
                     <div className="flex items-center gap-4 mb-4">
                       <div className="flex-1 h-[1px] bg-white/[0.06]" />
@@ -150,10 +157,10 @@ export default function AuthModal() {
                       <div className="flex-1 h-[1px] bg-white/[0.06]" />
                     </div>
 
-                    <button className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
+                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
                       <Globe className="w-4 h-4" /> Continue with Google
                     </button>
-                    <button className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
+                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
                       <Smartphone className="w-4 h-4" /> Continue with Apple
                     </button>
                   </motion.div>
@@ -214,7 +221,7 @@ export default function AuthModal() {
                       </span>
                     </label>
 
-                    <button className="btn-cosmic-primary w-full text-[14px] mb-4 flex items-center justify-center gap-2">
+                    <button onClick={handleNavigateToCreate} className="btn-cosmic-primary w-full text-[14px] mb-4 flex items-center justify-center gap-2">
                       <Sparkles className="w-4 h-4" /> Create My Universe
                     </button>
 
@@ -224,10 +231,10 @@ export default function AuthModal() {
                       <div className="flex-1 h-[1px] bg-white/[0.06]" />
                     </div>
 
-                    <button className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
+                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
                       <Globe className="w-4 h-4" /> Continue with Google
                     </button>
-                    <button className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
+                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
                       <Smartphone className="w-4 h-4" /> Continue with Apple
                     </button>
                   </motion.div>
