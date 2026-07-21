@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '@/services/storageService'
+import { QRCodeSVG } from 'qrcode.react'
 import { 
   Heart, 
   Sparkles, 
@@ -47,6 +48,7 @@ export default function CreateSpacePage() {
   const [category, setCategory] = useState('Our Journey')
   const [isPrivate, setIsPrivate] = useState(true)
   const [coverPhoto, setCoverPhoto] = useState('https://images.unsplash.com/photo-1501908731398-23b3efd7ccab?auto=format&fit=crop&w=350&q=80')
+  const [inviteUrl, setInviteUrl] = useState('https://foreverremebered.com/join?invite=8xK')
   
   // Invite States for Step 3
   const [emailInput, setEmailInput] = useState('')
@@ -106,6 +108,10 @@ export default function CreateSpacePage() {
   }, [])
 
   useEffect(() => {
+    setInviteUrl(`${window.location.origin}/join?invite=8xK`)
+  }, [])
+
+  useEffect(() => {
     return () => {
       uploadVersionRef.current += 1
       if (objectUrlRef.current) {
@@ -130,7 +136,7 @@ export default function CreateSpacePage() {
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText('foreverremebered.com/invite/8xK')
+    navigator.clipboard.writeText(inviteUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -267,11 +273,12 @@ export default function CreateSpacePage() {
       {/* CSS Styles for GPU-optimized animations and glare effects */}
       <style jsx global>{`
         @keyframes scan {
-          0%, 100% { transform: translate3d(0, 4px, 0); opacity: 0.8; }
-          50% { transform: translate3d(0, 136px, 0); opacity: 0.8; }
+          0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.8; }
+          50% { transform: translate3d(0, 48px, 0); opacity: 0.8; }
         }
         .scan-line {
           position: absolute;
+          top: 120px;
           left: 4%;
           right: 4%;
           height: 2px;
@@ -1108,7 +1115,7 @@ export default function CreateSpacePage() {
                       <input
                         type="text"
                         readOnly
-                        value="foreverremebered.com/invite/8xK"
+                        value={inviteUrl.replace(/^https?:\/\//, '')}
                         className="flex-1 bg-black/40 border border-white/10 text-gray-400 rounded-xl py-2.5 px-3 focus:outline-none text-xs truncate"
                       />
                       <button
@@ -1139,18 +1146,15 @@ export default function CreateSpacePage() {
                     </div>
 
                     <div className="mt-4 flex justify-center z-10">
-                      <div className="p-1 rounded-xl bg-[#0c071e]/90 border border-neonPink/30 shadow-[0_0_15px_rgba(255,75,145,0.25)]">
-                        <svg className="w-14 h-14 text-neonPink fill-current animate-pulse" viewBox="0 0 100 100">
-                          <path d="M10 10 h25 v25 h-25 z M10 20 h15 M20 10 v15 M15 15 h5" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <path d="M65 10 h25 v25 h-25 z M65 20 h15 M75 10 v15 M70 15 h5" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <path d="M10 65 h25 v25 h-25 z M10 75 h15 M20 65 v15 M15 70 h5" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <rect x="45" y="15" width="8" height="8" />
-                          <rect x="55" y="25" width="6" height="6" />
-                          <rect x="75" y="45" width="8" height="8" />
-                          <rect x="45" y="65" width="10" height="5" />
-                          <rect x="65" y="75" width="5" height="10" />
-                          <rect x="80" y="80" width="8" height="8" />
-                        </svg>
+                      <div className="p-1 rounded-xl bg-white border border-neonPink/30 shadow-[0_0_15px_rgba(255,75,145,0.25)]">
+                        <QRCodeSVG
+                          value={inviteUrl}
+                          size={68}
+                          level="M"
+                          marginSize={2}
+                          fgColor="#12071e"
+                          bgColor="#ffffff"
+                        />
                       </div>
                     </div>
                   </div>
