@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { uploadImage } from '@/services/storageService'
 import { 
   Heart, 
   Sparkles, 
@@ -64,6 +65,9 @@ export default function CreateSpacePage() {
   const [isCtaHovered, setIsCtaHovered] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const objectUrlRef = useRef<string | null>(null)
+  const uploadVersionRef = useRef(0)
 
   // Floating Cosmic Particles State
   const [particles] = useState(() => 
@@ -98,6 +102,15 @@ export default function CreateSpacePage() {
     document.head.appendChild(link)
     return () => {
       document.head.removeChild(link)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      uploadVersionRef.current += 1
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current)
+      }
     }
   }, [])
 
@@ -167,9 +180,59 @@ export default function CreateSpacePage() {
     'https://images.unsplash.com/photo-1494905998402-395d579af36f?auto=format&fit=crop&w=350&q=80'
   ]
 
+  const saveCoverPhoto = (nextCoverPhoto: string, objectUrl?: string) => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+    }
+    objectUrlRef.current = objectUrl ?? null
+    setCoverPhoto(nextCoverPhoto)
+
+    const setupData = {
+      spaceName,
+      themeColor,
+      specialDate,
+      relationshipEmoji,
+      description,
+      category,
+      isPrivate,
+      coverPhoto: nextCoverPhoto,
+      selectedRelation,
+      invites
+    }
+    localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
+    window.dispatchEvent(new Event('storage'))
+  }
+
+  const handleCoverImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+
+    const supportedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic']
+    const hasSupportedExtension = /\.(jpe?g|png|webp|gif|heic)$/i.test(file.name)
+    if (!supportedImageTypes.includes(file.type) && !hasSupportedExtension) return
+
+    const uploadVersion = ++uploadVersionRef.current
+    const objectUrl = URL.createObjectURL(file)
+    saveCoverPhoto(objectUrl, objectUrl)
+
+    if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+      const result = await uploadImage(file, 'pending-space')
+      if (result.success && uploadVersion === uploadVersionRef.current) {
+        saveCoverPhoto(result.url)
+      }
+    }
+  }
+
   const handleCycleCover = () => {
+    uploadVersionRef.current += 1
     const currentIndex = presetPhotos.indexOf(coverPhoto)
     const nextIndex = (currentIndex + 1) % presetPhotos.length
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+    }
     setCoverPhoto(presetPhotos[nextIndex])
   }
 
@@ -835,7 +898,7 @@ export default function CreateSpacePage() {
                         </label>
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div 
-                            onClick={handleCycleCover}
+                            onClick={() => inputRef.current?.click()}
                             className="border border-dashed border-white/10 rounded-xl bg-black/20 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-black/30 transition-all"
                           >
                             <Upload className="w-5 h-5 text-gray-400 mb-2" />
@@ -846,6 +909,13 @@ export default function CreateSpacePage() {
                               Browse Files
                             </span>
                           </div>
+                          <input
+                            ref={inputRef}
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            onChange={handleCoverImageChange}
+                          />
 
                           <div className="rounded-xl overflow-hidden relative aspect-[1.8] bg-black/40 border border-white/5">
                             <div className="absolute inset-0 bg-cover bg-center opacity-85 transition-all duration-300" style={{ backgroundImage: `url('${coverPhoto}')` }}></div>
