@@ -51,11 +51,7 @@ export default function CreateSpacePage() {
   // Invite States for Step 3
   const [emailInput, setEmailInput] = useState('')
   const [copied, setCopied] = useState(false)
-  const [invites, setInvites] = useState([
-    { email: 'aanya.sharma@email.com', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80', time: 'Invited 2m ago', status: 'Pending' },
-    { email: 'rahul.verma@email.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80', time: 'Invited 1h ago', status: 'Pending' },
-    { email: 'kavya.mehta@email.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', time: 'Invited 1d ago', status: 'Accepted' },
-  ])
+  const [invites, setInvites] = useState<Array<{ email: string; avatar: string; time: string; status: string }>>([])
 
   // Mouse coordinates for spot glow & parallax
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
