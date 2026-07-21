@@ -4,9 +4,14 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Save, Trash2, Plus, Sparkles } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
+<<<<<<< HEAD
 import { useStoryBook } from '@/context/StoryBookContext'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpaceData } from '@/hooks/useSpaceData'
+=======
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { uploadImage, uploadVideo } from '@/services/storageService'
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
 import { addMemory } from '@/services/firestoreService'
 import { MemoryType } from '@/types/enums'
 
@@ -18,9 +23,13 @@ interface Toast {
 
 export default function BottomActionBar() {
   const { draft, saveDraft, resetDraft, triggerSaveMemory, draftSaved } = useMemory()
+<<<<<<< HEAD
   const { addChapter } = useStoryBook()
   const { user } = useAuth()
   const { spaceData } = useSpaceData()
+=======
+  const { user } = useFirebaseAuth()
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
   const [showDiscard, setShowDiscard] = useState(false)
   const [showAddAnother, setShowAddAnother] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -51,18 +60,54 @@ export default function BottomActionBar() {
   }, [resetDraft, showToast])
 
   const handleSaveMemory = useCallback(async () => {
+<<<<<<< HEAD
     if (!user || !spaceData.spaceId) {
       showToast('Create a universe before saving a memory', 'âš ï¸')
       return
     }
 
     const typeMap: Record<typeof draft.selectedMemoryType, MemoryType> = {
+=======
+    if (!user) {
+      showToast('Please sign in to save memories', '⚠️')
+      return
+    }
+
+    if (!draft.uploadedFileName) {
+      showToast('Please upload a file first', '⚠️')
+      return
+    }
+
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')
+    const file = fileInput?.files?.[0]
+    if (!file) {
+      showToast('File not found. Please re-upload.', '⚠️')
+      return
+    }
+
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+
+    const uploadResult = isImage
+      ? await uploadImage(file, user.uid)
+      : isVideo
+      ? await uploadVideo(file, user.uid)
+      : null
+
+    if (!uploadResult?.success) {
+      showToast('Failed to upload file. Please try again.', '❌')
+      return
+    }
+
+    const memoryTypeMap: Record<string, MemoryType> = {
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
       photos: MemoryType.PHOTO,
       videos: MemoryType.VIDEO,
       voice: MemoryType.AUDIO,
       journal: MemoryType.JOURNAL,
       location: MemoryType.NOTE,
     }
+<<<<<<< HEAD
     const result = await addMemory({
       spaceId: spaceData.spaceId,
       ownerId: user.uid,
@@ -100,10 +145,45 @@ export default function BottomActionBar() {
       tags: draft.tags,
       visibility: draft.visibility,
       favorite: draft.favorite,
+=======
+
+    const result = await addMemory({
+      spaceId: user.uid,
+      ownerId: user.uid,
+      title: draft.title || 'Untitled Memory',
+      description: draft.description || undefined,
+      type: memoryTypeMap[draft.selectedMemoryType] ?? MemoryType.NOTE,
+      mediaUrl: uploadResult.url,
+      updatedAt: undefined,
+      metadata: {
+        fileName: draft.uploadedFileName,
+        date: draft.date || undefined,
+        location: draft.location || undefined,
+        mood: draft.mood ?? undefined,
+        weather: draft.weather ?? undefined,
+        people: draft.people.length > 0 ? draft.people : undefined,
+        category: draft.category || undefined,
+        tags: draft.tags.length > 0 ? draft.tags : undefined,
+        visibility: draft.visibility,
+        favorite: draft.favorite,
+        relationship: draft.relationship || undefined,
+      },
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
     })
+
+    if (!result.success) {
+      showToast('Failed to save memory. Please try again.', '❌')
+      return
+    }
+
     triggerSaveMemory()
+<<<<<<< HEAD
     showToast('Memory Saved to StoryBook ✨', '📖')
   }, [draft, addChapter, triggerSaveMemory, showToast, spaceData.spaceId, user])
+=======
+    showToast('Memory saved to the stars ✨', '🌟')
+  }, [user, draft, triggerSaveMemory, showToast])
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
 
   return (
     <>

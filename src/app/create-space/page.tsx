@@ -24,6 +24,8 @@ import {
   Copy
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { createSpace } from '@/services/spaceServices'
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49267
@@ -66,13 +68,19 @@ export default function CreateSpacePage() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 })
   
+  const { user } = useFirebaseAuth()
+
   // Step 4 Success States
   const [isCtaHovered, setIsCtaHovered] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+<<<<<<< HEAD
   const inputRef = useRef<HTMLInputElement>(null)
   const objectUrlRef = useRef<string | null>(null)
   const uploadVersionRef = useRef(0)
+=======
+  const [createError, setCreateError] = useState('')
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
 
   // Floating Cosmic Particles State
   const [particles] = useState(() => 
@@ -161,21 +169,11 @@ export default function CreateSpacePage() {
 
   const handleFinalEnter = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setIsEnding(true)
-    
-    // Save details to localStorage
-    const setupData = {
-      spaceName,
-      themeColor,
-      specialDate,
-      relationshipEmoji,
-      description,
-      category,
-      isPrivate,
-      coverPhoto,
-      selectedRelation,
-      invites
+    if (!user) {
+      setCreateError('You must be logged in to create a space.')
+      return
     }
+<<<<<<< HEAD
     let persistedSetupData: typeof setupData & { spaceId?: string } = setupData
     if (user) {
       const result = await createSpace(spaceName, user.uid, selectedRelation ?? 'couple', setupData)
@@ -184,7 +182,24 @@ export default function CreateSpacePage() {
       }
     }
     localStorage.setItem('memory-universe-setup', JSON.stringify(persistedSetupData))
+=======
+    if (!selectedRelation) {
+      setCreateError('Please select a relationship type.')
+      return
+    }
+    setCreateError('')
+    setIsLoading(true)
+>>>>>>> 1795348 (Integrate Firebase auth and fix createSpace service)
 
+    const result = await createSpace(spaceName, user.uid, selectedRelation)
+
+    if (!result.success) {
+      setCreateError(result.error?.message ?? 'Failed to create space.')
+      setIsLoading(false)
+      return
+    }
+
+    setIsEnding(true)
     setTimeout(() => {
       router.push('/dashboard')
     }, 1000)
@@ -1307,12 +1322,14 @@ export default function CreateSpacePage() {
                       </p>
                     </div>
 
+                    {createError ? <p className="text-sm text-rose-400 text-center">{createError}</p> : null}
+
                     {/* Large CTA with emitter hover particles */}
                     <button
                       onMouseEnter={() => setIsCtaHovered(true)}
                       onMouseLeave={() => setIsCtaHovered(false)}
                       onClick={handleFinalEnter}
-                      disabled={isEnding}
+                      disabled={isEnding || isLoading}
                       className="relative px-8 py-4.5 bg-gradient-to-r from-neonPink to-neonPurple text-white font-extrabold rounded-2xl shadow-glow-pink hover:scale-105 active:scale-95 hover:shadow-[0_0_35px_rgba(255,75,145,0.7)] active:shadow-glow-pink transition-all duration-300 flex items-center gap-3 w-full sm:w-auto text-center justify-center cursor-pointer text-sm z-10"
                     >
                       <span>Enter Memory Universe</span>
