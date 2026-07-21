@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 export interface SpaceData {
+  spaceId?: string
   spaceName: string
   themeColor: string
   specialDate: string

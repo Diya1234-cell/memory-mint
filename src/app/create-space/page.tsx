@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '@/services/storageService'
 import { QRCodeSVG } from 'qrcode.react'
+import { useAuth } from '@/providers/AuthProvider'
+import { createSpace } from '@/services/spaceServices'
 import { 
   Heart, 
   Sparkles, 
@@ -33,6 +35,7 @@ const fontLink = "https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&d
 
 export default function CreateSpacePage() {
   const router = useRouter()
+  const { user } = useAuth()
 
   // Onboarding Wizard States
   const [step, setStep] = useState(1) // 1, 2, 3, or 4
@@ -156,7 +159,7 @@ export default function CreateSpacePage() {
     setEmailInput('')
   }
 
-  const handleFinalEnter = (e: React.MouseEvent) => {
+  const handleFinalEnter = async (e: React.MouseEvent) => {
     e.preventDefault()
     setIsEnding(true)
     
@@ -173,7 +176,14 @@ export default function CreateSpacePage() {
       selectedRelation,
       invites
     }
-    localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
+    let persistedSetupData: typeof setupData & { spaceId?: string } = setupData
+    if (user) {
+      const result = await createSpace(spaceName, user.uid, selectedRelation ?? 'couple', setupData)
+      if (result.success) {
+        persistedSetupData = { ...setupData, spaceId: result.id }
+      }
+    }
+    localStorage.setItem('memory-universe-setup', JSON.stringify(persistedSetupData))
 
     setTimeout(() => {
       router.push('/dashboard')

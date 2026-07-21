@@ -1,7 +1,11 @@
+import { addDoc, collection, Timestamp } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+
 export const createSpace = async (
     spaceName: string,
     userId: string,
-    relationshipType: string
+    relationshipType: string,
+    details: Record<string, unknown> = {}
 ) => {
     try {
         const docRef = await addDoc(collection(db, "spaces"), {
@@ -11,6 +15,7 @@ export const createSpace = async (
             members: [userId],
             inviteToken: crypto.randomUUID(),
             createdAt: Timestamp.now(),
+            ...details,
         });
 
         return {

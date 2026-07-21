@@ -7,6 +7,7 @@ export interface MemoryDraft {
   description: string
   selectedMemoryType: 'photos' | 'videos' | 'voice' | 'journal' | 'location'
   uploadedFileName: string | null
+  mediaUrl: string | null
   date: string
   location: string
   mood: number | null
@@ -24,6 +25,7 @@ const defaultDraft: MemoryDraft = {
   description: '',
   selectedMemoryType: 'photos',
   uploadedFileName: null,
+  mediaUrl: null,
   date: '',
   location: '',
   mood: null,

@@ -281,6 +281,7 @@ export default function DashboardPage() {
                 
                 {/* Action 1: Upload Memory */}
                 <motion.div
+                  onClick={() => router.push('/upload')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-pink-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -306,6 +307,7 @@ export default function DashboardPage() {
 
                 {/* Action 2: Generate Story */}
                 <motion.div
+                  onClick={() => router.push('/storybook')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-purple-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -327,6 +329,7 @@ export default function DashboardPage() {
 
                 {/* Action 3: Write Letter */}
                 <motion.div
+                  onClick={() => router.push('/letters')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-fuchsia-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -348,6 +351,7 @@ export default function DashboardPage() {
 
                 {/* Action 4: Create Time Capsule */}
                 <motion.div
+                  onClick={() => router.push('/letters')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-blue-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"

@@ -8,8 +8,18 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from 'firebase/auth'
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { auth, db } from '@/lib/firebase'
 
 type AuthUser = {
+  uid: string
   email: string
   name?: string
 }
@@ -24,11 +34,8 @@ interface AuthContextType {
     confirmPassword: string,
     name: string,
   ) => Promise<{ success: boolean; message?: string }>
-  logout: () => void
+  logout: () => Promise<void>
 }
-
-const AUTH_STORAGE_KEY = 'memory-mint-auth'
-const CURRENT_USER_KEY = 'memory-mint-user'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
@@ -37,15 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const storedUser = localStorage.getItem(CURRENT_USER_KEY)
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch {
-        setUser(null)
-      }
-    }
-    setLoading(false)
+    return onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser ? {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        name: firebaseUser.displayName ?? undefined,
+      } : null)
+      setLoading(false)
+    })
   }, [])
 
   const login = async (email: string, password: string) => {
@@ -53,28 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, message: 'Please enter email and password.' }
     }
 
-    const rawAuth = localStorage.getItem(AUTH_STORAGE_KEY)
-    if (!rawAuth) {
-      return { success: false, message: 'No account found. Please sign up first.' }
-    }
-
     try {
-      const authData = JSON.parse(rawAuth) as {
-        email: string
-        password: string
-        name: string
-      }
-
-      if (authData.email.toLowerCase() !== email.toLowerCase() || authData.password !== password) {
-        return { success: false, message: 'Invalid email or password.' }
-      }
-
-      const currentUser = { email: authData.email, name: authData.name }
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser))
-      setUser(currentUser)
+      await signInWithEmailAndPassword(auth, email, password)
       return { success: true }
-    } catch {
-      return { success: false, message: 'Unable to read saved credentials.' }
+    } catch (error: unknown) {
+      const code = (error as { code?: string }).code
+      return {
+        success: false,
+        message: code === 'auth/invalid-credential' ? 'Invalid email or password.' : 'Unable to sign in. Please try again.',
+      }
     }
   }
 
@@ -96,23 +89,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, message: 'Use a password with at least 6 characters.' }
     }
 
-    const authData = {
-      email: email.toLowerCase(),
-      password,
-      name,
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email.toLowerCase(), password)
+      await updateProfile(credential.user, { displayName: name })
+      await setDoc(doc(db, 'users', credential.user.uid), {
+        email: credential.user.email,
+        displayName: name,
+        createdAt: serverTimestamp(),
+        lastActiveAt: serverTimestamp(),
+      }, { merge: true })
+      return { success: true }
+    } catch (error: unknown) {
+      const code = (error as { code?: string }).code
+      return {
+        success: false,
+        message: code === 'auth/email-already-in-use' ? 'An account already exists with this email.' : 'Unable to create your account. Please try again.',
+      }
     }
-
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData))
-    const currentUser = { email: authData.email, name: authData.name }
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser))
-    setUser(currentUser)
-
-    return { success: true }
   }
 
-  const logout = () => {
-    localStorage.removeItem(CURRENT_USER_KEY)
-    setUser(null)
+  const logout = async () => {
+    await signOut(auth)
   }
 
   const value = useMemo(

@@ -4,6 +4,9 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, Sparkles, Check, Image, Film, Music, FileText } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
+import { useSpaceData } from '@/hooks/useSpaceData'
+import { useAuth } from '@/providers/AuthProvider'
+import { uploadImage } from '@/services/storageService'
 
 function lcg(seed: number): () => number {
   let s = seed >>> 0
@@ -28,6 +31,8 @@ const orbitRings = [
 
 export default function UploadPortal() {
   const { setField, triggerSaveMemory } = useMemory()
+  const { spaceData } = useSpaceData()
+  const { user } = useAuth()
   const [isHovered, setIsHovered] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -109,10 +114,11 @@ export default function UploadPortal() {
     }, 120)
   }, [cleanupInterval])
 
-  const handleFile = useCallback((file: File | undefined) => {
+  const handleFile = useCallback(async (file: File | undefined) => {
     if (!file) return
     setSelectedFile(file)
     setField('uploadedFileName', file.name)
+    setField('mediaUrl', null)
     // Generate preview URL for images
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file)
@@ -121,7 +127,14 @@ export default function UploadPortal() {
       setPreviewUrl(null)
     }
     simulateUpload()
-  }, [simulateUpload, setField])
+
+    if (user && spaceData.spaceId) {
+      const result = await uploadImage(file, spaceData.spaceId)
+      if (result.success) {
+        setField('mediaUrl', result.url)
+      }
+    }
+  }, [simulateUpload, setField, spaceData.spaceId, user])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -153,6 +166,7 @@ export default function UploadPortal() {
     setSelectedFile(null)
     setPreviewUrl(null)
     setField('uploadedFileName', null)
+    setField('mediaUrl', null)
     cleanupInterval()
   }, [cleanupInterval, setField])
 

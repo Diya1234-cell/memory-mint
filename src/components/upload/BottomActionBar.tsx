@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Save, Trash2, Plus, Sparkles } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
 import { useStoryBook } from '@/context/StoryBookContext'
+import { useAuth } from '@/providers/AuthProvider'
+import { useSpaceData } from '@/hooks/useSpaceData'
+import { addMemory } from '@/services/firestoreService'
+import { MemoryType } from '@/types/enums'
 
 interface Toast {
   id: number
@@ -15,6 +19,8 @@ interface Toast {
 export default function BottomActionBar() {
   const { draft, saveDraft, resetDraft, triggerSaveMemory, draftSaved } = useMemory()
   const { addChapter } = useStoryBook()
+  const { user } = useAuth()
+  const { spaceData } = useSpaceData()
   const [showDiscard, setShowDiscard] = useState(false)
   const [showAddAnother, setShowAddAnother] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -44,7 +50,42 @@ export default function BottomActionBar() {
     showToast('Ready for New Memory', '✨')
   }, [resetDraft, showToast])
 
-  const handleSaveMemory = useCallback(() => {
+  const handleSaveMemory = useCallback(async () => {
+    if (!user || !spaceData.spaceId) {
+      showToast('Create a universe before saving a memory', 'âš ï¸')
+      return
+    }
+
+    const typeMap: Record<typeof draft.selectedMemoryType, MemoryType> = {
+      photos: MemoryType.PHOTO,
+      videos: MemoryType.VIDEO,
+      voice: MemoryType.AUDIO,
+      journal: MemoryType.JOURNAL,
+      location: MemoryType.NOTE,
+    }
+    const result = await addMemory({
+      spaceId: spaceData.spaceId,
+      ownerId: user.uid,
+      type: typeMap[draft.selectedMemoryType],
+      title: draft.title || 'Untitled Memory',
+      description: draft.description || undefined,
+      mediaUrl: draft.mediaUrl || undefined,
+      metadata: {
+        date: draft.date,
+        location: draft.location,
+        people: draft.people,
+        category: draft.category,
+        tags: draft.tags,
+        visibility: draft.visibility,
+        favorite: draft.favorite,
+        uploadedFileName: draft.uploadedFileName,
+      },
+    })
+    if (!result.success) {
+      showToast('Unable to save memory to the database', 'âš ï¸')
+      return
+    }
+
     addChapter({
       title: draft.title,
       description: draft.description,
@@ -62,7 +103,7 @@ export default function BottomActionBar() {
     })
     triggerSaveMemory()
     showToast('Memory Saved to StoryBook ✨', '📖')
-  }, [draft, addChapter, triggerSaveMemory, showToast])
+  }, [draft, addChapter, triggerSaveMemory, showToast, spaceData.spaceId, user])
 
   return (
     <>

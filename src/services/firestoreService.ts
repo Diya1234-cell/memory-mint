@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   collection,
   query,
@@ -86,6 +87,29 @@ export async function getMemories(spaceId: string) {
       } as Memory;
     });
     return { success: true, data: memories } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function getLetterState(spaceId: string, userId: string) {
+  try {
+    const snap = await getDoc(doc(db, "spaces", spaceId, "letterStates", userId));
+    return { success: true, data: snap.exists() ? snap.data() : null } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function saveLetterState(spaceId: string, userId: string, state: Record<string, unknown>) {
+  try {
+    await setDoc(doc(db, "spaces", spaceId, "letterStates", userId), {
+      ...state,
+      updatedAt: Timestamp.now(),
+    }, { merge: true });
+    return { success: true } as const;
   } catch (error) {
     console.error(error);
     return { success: false, error } as const;
