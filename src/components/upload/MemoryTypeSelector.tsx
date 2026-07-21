@@ -22,6 +22,8 @@ export default function MemoryTypeSelector() {
         return (
           <motion.button
             key={type.id}
+            type="button"
+            aria-pressed={isSelected}
             onClick={() => setField('selectedMemoryType', type.id)}
             className="relative px-5 py-2.5 rounded-xl text-sm font-medium"
             whileHover={{ scale: 1.02 }}

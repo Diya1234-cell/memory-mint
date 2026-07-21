@@ -30,7 +30,7 @@ const orbitRings = [
 ]
 
 export default function UploadPortal() {
-  const { setField, triggerSaveMemory } = useMemory()
+  const { draft, setField, triggerSaveMemory } = useMemory()
   const { spaceData } = useSpaceData()
   const { user } = useAuth()
   const [isHovered, setIsHovered] = useState(false)
@@ -42,6 +42,14 @@ export default function UploadPortal() {
   const [isMounted, setIsMounted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const acceptedFilesByType = {
+    photos: 'image/*',
+    videos: 'video/*',
+    voice: 'audio/*',
+    journal: '.txt,.md,.pdf',
+    location: 'image/*,video/*,audio/*,.txt,.md,.pdf',
+  } as const
 
   const starData = useMemo(() => {
     const rng = lcg(42)
@@ -116,6 +124,15 @@ export default function UploadPortal() {
 
   const handleFile = useCallback(async (file: File | undefined) => {
     if (!file) return
+    const isSupported = {
+      photos: file.type.startsWith('image/'),
+      videos: file.type.startsWith('video/'),
+      voice: file.type.startsWith('audio/'),
+      journal: /\.(txt|md|pdf)$/i.test(file.name),
+      location: true,
+    }[draft.selectedMemoryType]
+    if (!isSupported) return
+
     setSelectedFile(file)
     setField('uploadedFileName', file.name)
     setField('mediaUrl', null)
@@ -134,7 +151,7 @@ export default function UploadPortal() {
         setField('mediaUrl', result.url)
       }
     }
-  }, [simulateUpload, setField, spaceData.spaceId, user])
+  }, [draft.selectedMemoryType, simulateUpload, setField, spaceData.spaceId, user])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -830,7 +847,7 @@ export default function UploadPortal() {
         type="file"
         className="hidden"
         onChange={handleFileSelect}
-        accept="image/*,video/*,audio/*,.txt,.pdf"
+        accept={acceptedFilesByType[draft.selectedMemoryType]}
       />
 
       {/* ─── Keyframes ─── */}
