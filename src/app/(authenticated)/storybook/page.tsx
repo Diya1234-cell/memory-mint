@@ -447,7 +447,7 @@ function ConstellationGrid({ images, color, onPhotoClick }: CollageProps) {
           </line>
         ))}
         {nodes.map((n, i) => (
-          <circle key={i} cx={n.cx} cy={n.cy} r={n.r} fill={color} opacity="0.5">
+          <circle key={i} cx={n.cx} cy={n.cy} r={n.r ?? 2} fill={color} opacity="0.5">
             <animate attributeName="opacity" values="0.3;0.8;0.3" dur={`${2 + i * 0.5}s`} repeatCount="indefinite" />
           </circle>
         ))}
@@ -478,7 +478,7 @@ function ConstellationGrid({ images, color, onPhotoClick }: CollageProps) {
   )
 }
 
-function getCollageLayout(chapter: typeof chapters[0]) {
+function getCollageLayout(chapter: StoryBookChapter) {
   const layouts: Record<string, typeof PolaroidStack> = {
     'polaroid-stack': PolaroidStack,
     'scattered-hearts': ScatteredHearts,
@@ -495,7 +495,7 @@ function BookContent({ chapter, side, editMode, onStoryEdit, onCaptionEdit }: {
   editMode?: boolean; onStoryEdit?: (html: string) => void; onCaptionEdit?: (text: string) => void;
 }) {
   const Collage = getCollageLayout(chapter)
-  const [selectedPhoto, setSelectedPhoto] = useState<typeof chapters[0]['images'][number] | null>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<StoryBookChapter['images'][number] | null>(null)
 
   if (side === 'left') {
     return (
