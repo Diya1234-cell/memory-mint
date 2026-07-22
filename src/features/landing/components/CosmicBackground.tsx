@@ -16,7 +16,7 @@ export default function CosmicBackground() {
 
   const stars = useMemo(() => {
     const rng = lcg(42)
-    return Array.from({ length: 120 }).map(() => ({
+    return Array.from({ length: 70 }).map(() => ({
       x: rng() * 100,
       y: rng() * 100,
       size: rng() * 2 + 0.3,
@@ -71,6 +71,8 @@ export default function CosmicBackground() {
     if (!ctx) return
 
     let animId: number
+    let lastFrame = 0
+    let pageVisible = document.visibilityState === 'visible'
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
@@ -78,7 +80,15 @@ export default function CosmicBackground() {
     resize()
     window.addEventListener('resize', resize)
 
-    const draw = () => {
+    const onVisibilityChange = () => {
+      pageVisible = document.visibilityState === 'visible'
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    const draw = (timestamp: number) => {
+      animId = requestAnimationFrame(draw)
+      if (!pageVisible || timestamp - lastFrame < 33) return
+      lastFrame = timestamp
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       const t = Date.now() * 0.001
 
@@ -99,12 +109,12 @@ export default function CosmicBackground() {
         ctx.fill()
       })
 
-      animId = requestAnimationFrame(draw)
     }
-    draw()
+    animId = requestAnimationFrame(draw)
 
     return () => {
       window.removeEventListener('resize', resize)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       cancelAnimationFrame(animId)
     }
   }, [stars])
@@ -264,7 +274,7 @@ export default function CosmicBackground() {
       ))}
 
       {/* Cosmic dust particles */}
-      {Array.from({ length: 24 }).map((_, i) => {
+      {Array.from({ length: 12 }).map((_, i) => {
         const dustColors = [
           'rgba(255,255,255,0.18)',
           'rgba(255,77,184,0.18)',
