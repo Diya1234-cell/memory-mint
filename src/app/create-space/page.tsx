@@ -23,11 +23,8 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createSpace } from '@/services/spaceServices'
-<<<<<<< HEAD
 import { useAuth } from '@/providers/AuthProvider'
-=======
 import { createInvite } from '@/services/firestoreService'
->>>>>>> 320e781156e4fcc2215e652b648a58467f95f3f5
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49267
@@ -337,6 +334,22 @@ export default function CreateSpacePage() {
   }
 
   const currentTheme = themeDetails[themeColor as keyof typeof themeDetails] || themeDetails.pink
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login')
+    }
+  }, [loading, user, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!user) return null
 
   return (
     <div className={`relative min-h-screen text-slate-100 font-sans overflow-x-hidden pb-12 flex flex-col justify-between transition-opacity duration-1000 ease-out ${
