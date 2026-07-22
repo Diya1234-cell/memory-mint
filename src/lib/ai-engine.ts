@@ -30,14 +30,14 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
   if (!apiKey) return null;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        system_instruction: {
+        systemInstruction: {
           parts: [{ text: systemPrompt }]
         },
         contents: [
@@ -59,8 +59,14 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
       try {
         const parsed = JSON.parse(errorBody);
         if (parsed.error?.message) errorDetail = parsed.error.message;
+        if (parsed.error?.code) errorDetail += ` (code ${parsed.error.code})`;
       } catch {}
-      console.warn('Gemini API request failed:', response.status, errorDetail);
+      console.warn(`Gemini API error [${response.status}]: ${errorDetail}`);
+      if (response.status === 429) {
+        console.warn('Rate limited by Gemini API.');
+      } else if (response.status === 404 || response.status === 400) {
+        console.warn('Check model name or request structure.');
+      }
       return null;
     }
 
