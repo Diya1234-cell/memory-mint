@@ -23,7 +23,11 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createSpace } from '@/services/spaceServices'
+<<<<<<< HEAD
 import { useAuth } from '@/providers/AuthProvider'
+=======
+import { createInvite } from '@/services/firestoreService'
+>>>>>>> 320e781156e4fcc2215e652b648a58467f95f3f5
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49267
@@ -65,6 +69,10 @@ export default function CreateSpacePage() {
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 })
   
   const { user, loading } = useAuth()
+
+  const [spaceId, setSpaceId] = useState<string | null>(null)
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [inviteError, setInviteError] = useState('')
 
   // Step 4 Success States
   const [isCtaHovered, setIsCtaHovered] = useState(false)
@@ -145,19 +153,56 @@ export default function CreateSpacePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleAddInvite = (e: React.FormEvent) => {
+  const handleAddInvite = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!emailInput) return
-    setInvites([
-      {
-        email: emailInput,
-        avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 99999)}?auto=format&fit=crop&w=80&q=80`,
-        time: 'Invited just now',
-        status: 'Pending'
-      },
-      ...invites
-    ])
-    setEmailInput('')
+    if (!emailInput || !user) return
+
+    setInviteLoading(true)
+    setInviteError('')
+
+    try {
+      let currentSpaceId = spaceId
+      if (!currentSpaceId) {
+        const result = await createSpace(
+          spaceName,
+          user.uid,
+          selectedRelation ?? 'friends'
+        )
+        if (!result.success) {
+          setInviteError('Failed to create space.')
+          setInviteLoading(false)
+          return
+        }
+        currentSpaceId = result.id!
+        setSpaceId(currentSpaceId)
+      }
+
+      const inviteResult = await createInvite(
+        currentSpaceId,
+        user.uid,
+        emailInput
+      )
+      if (!inviteResult.success) {
+        setInviteError('Failed to create invite.')
+        setInviteLoading(false)
+        return
+      }
+
+      setInvites([
+        {
+          email: emailInput,
+          avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 99999)}?auto=format&fit=crop&w=80&q=80`,
+          time: 'Invited just now',
+          status: 'Pending'
+        },
+        ...invites
+      ])
+      setEmailInput('')
+    } catch {
+      setInviteError('Something went wrong.')
+    } finally {
+      setInviteLoading(false)
+    }
   }
 
   const handleFinalEnter = async (e: React.MouseEvent) => {
@@ -176,12 +221,15 @@ export default function CreateSpacePage() {
     setCreateError('')
     setIsLoading(true)
 
-    const result = await createSpace(spaceName, user.uid, selectedRelation)
-
-    if (!result.success) {
-      setCreateError(result.error?.message ?? 'Failed to create space.')
-      setIsLoading(false)
-      return
+    let resultSpaceId = spaceId
+    if (!resultSpaceId) {
+      const result = await createSpace(spaceName, user.uid, selectedRelation)
+      if (!result.success) {
+        setCreateError(result.error?.message ?? 'Failed to create space.')
+        setIsLoading(false)
+        return
+      }
+      resultSpaceId = result.id!
     }
 
     const setupData = {
@@ -195,7 +243,7 @@ export default function CreateSpacePage() {
       coverPhoto,
       selectedRelation,
       invites,
-      spaceId: result.id,
+      spaceId: resultSpaceId,
     }
     localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
 
@@ -1117,11 +1165,13 @@ export default function CreateSpacePage() {
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2.5 bg-gradient-to-r from-neonPink to-neonPurple text-white text-xs font-bold rounded-xl shadow-glow-pink hover:scale-105 active:scale-95 transition-all duration-300 flex-shrink-0"
+                        disabled={inviteLoading}
+                        className="px-4 py-2.5 bg-gradient-to-r from-neonPink to-neonPurple text-white text-xs font-bold rounded-xl shadow-glow-pink hover:scale-105 active:scale-95 transition-all duration-300 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
-                        Invite
+                        {inviteLoading ? '...' : 'Invite'}
                       </button>
                     </form>
+                    {inviteError ? <p className="text-xs text-rose-400 mt-2">{inviteError}</p> : null}
                   </div>
 
                   {/* Column 2: Share Link */}
