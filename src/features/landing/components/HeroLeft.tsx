@@ -2,6 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Sparkles, Heart, ArrowRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/providers/AuthProvider'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -13,6 +15,8 @@ const fadeUp = {
 }
 
 export default function HeroLeft() {
+  const router = useRouter()
+  const { user } = useAuth()
   return (
     <div className="flex flex-col justify-center max-w-xl lg:max-w-[540px]">
       {/* Badge */}
@@ -88,7 +92,7 @@ export default function HeroLeft() {
         className="flex flex-col sm:flex-row items-center gap-5 mb-8"
       >
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent('open-auth'))}
+          onClick={() => router.push(user ? '/create-space' : '/login')}
           className="relative px-7 py-3.5 bg-gradient-to-r from-neonPink to-neonPurple text-white text-[14px] font-bold rounded-full shadow-[0_0_25px_rgba(255,77,184,0.35)] hover:shadow-[0_0_45px_rgba(255,77,184,0.6)] hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 overflow-hidden group"
         >
           <span className="relative z-10 flex items-center gap-2">

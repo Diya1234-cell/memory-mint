@@ -19,11 +19,16 @@ import TimeCapsulePanel from './TimeCapsulePanel'
 import AIAssistant from './AIAssistant'
 import LetterPreviewModal from './LetterPreviewModal'
 import { AI_TEMPLATES } from './types'
+import { useAuth } from '@/providers/AuthProvider'
+import { useSpaceData } from '@/hooks/useSpaceData'
+import { getLetterState, saveLetterState } from '@/services/firestoreService'
 
 const STORAGE_KEY = 'memoryverse-letters-v2'
 
 function LettersContent() {
   const { addToast } = useToast()
+  const { user } = useAuth()
+  const { spaceData } = useSpaceData()
   const allLetters = useMemo(generateLetters, [])
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editorRef = useRef<LetterEditorHandle>(null)
@@ -38,6 +43,7 @@ function LettersContent() {
   const [editMode, setEditMode] = useState(true)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [previewLetter, setPreviewLetter] = useState<Letter | null>(null)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   const [settings, setSettings] = useState<Settings>({
     releaseDate: '2030-05-19',
@@ -56,33 +62,57 @@ function LettersContent() {
 
   // Load from localStorage
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const saved = JSON.parse(raw)
-        if (saved.current) setCurrent(saved.current)
-        if (saved.collection) setCollection(saved.collection)
-        if (saved.timeline) setTimeline(saved.timeline)
-        if (saved.settings) setSettings(saved.settings)
-        if (saved.letters) setLetters(saved.letters)
+    let active = true
+    setDataLoaded(false)
+    const applyState = (saved: Record<string, unknown>) => {
+      if (saved.current) setCurrent(saved.current as Letter)
+      if (saved.collection) setCollection(saved.collection as string)
+      if (saved.timeline) setTimeline(saved.timeline as string)
+      if (saved.settings) setSettings(saved.settings as Settings)
+      if (saved.letters) setLetters(saved.letters as Letter[])
+    }
+
+    const load = async () => {
+      if (user && spaceData.spaceId) {
+        const result = await getLetterState(spaceData.spaceId, user.uid)
+        if (result.success && result.data) {
+          applyState(result.data)
+          if (active) setDataLoaded(true)
+          return
+        }
       }
-    } catch {}
-  }, [])
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) applyState(JSON.parse(raw) as Record<string, unknown>)
+      } catch {}
+      if (active) setDataLoaded(true)
+    }
+
+    void load()
+    return () => { active = false }
+  }, [spaceData.spaceId, user])
 
   // Auto-save
   const triggerAutoSave = useCallback(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     setSaveStatus('saving')
     autoSaveTimer.current = setTimeout(() => {
+      const letterState = { current, collection, timeline, settings, letters }
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ current, collection, timeline, settings, letters }))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(letterState))
+        if (user && spaceData.spaceId) {
+          void saveLetterState(spaceData.spaceId, user.uid, letterState)
+        }
         setSaveStatus('saved')
         setTimeout(() => setSaveStatus('idle'), 2000)
       } catch {}
     }, 1500)
-  }, [current, collection, timeline, settings, letters])
+  }, [current, collection, timeline, settings, letters, spaceData.spaceId, user])
 
-  useEffect(() => { triggerAutoSave() }, [current, collection, timeline, settings])
+  useEffect(() => {
+    if (dataLoaded) triggerAutoSave()
+  }, [current, collection, timeline, settings, dataLoaded, triggerAutoSave])
 
   // Keyboard shortcuts
   useEffect(() => {

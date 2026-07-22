@@ -5,6 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Save, Trash2, Plus, Sparkles } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
 import { useStoryBook } from '@/context/StoryBookContext'
+import { useSpaceData } from '@/hooks/useSpaceData'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { uploadImage, uploadVideo } from '@/services/storageService'
+import { addMemory } from '@/services/firestoreService'
+import { MemoryType } from '@/types/enums'
 
 interface Toast {
   id: number
@@ -15,6 +20,8 @@ interface Toast {
 export default function BottomActionBar() {
   const { draft, saveDraft, resetDraft, triggerSaveMemory, draftSaved } = useMemory()
   const { addChapter } = useStoryBook()
+  const { spaceData } = useSpaceData()
+  const { user } = useFirebaseAuth()
   const [showDiscard, setShowDiscard] = useState(false)
   const [showAddAnother, setShowAddAnother] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -44,7 +51,77 @@ export default function BottomActionBar() {
     showToast('Ready for New Memory', '✨')
   }, [resetDraft, showToast])
 
-  const handleSaveMemory = useCallback(() => {
+  const handleSaveMemory = useCallback(async () => {
+    if (!user || !spaceData.spaceId) {
+      showToast('Create a universe before saving a memory', '⚠️')
+      return
+    }
+
+    if (!draft.uploadedFileName) {
+      showToast('Please upload a file first', '⚠️')
+      return
+    }
+
+    let mediaUrl = draft.mediaUrl
+
+    if (!mediaUrl) {
+      const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')
+      const file = fileInput?.files?.[0]
+      if (!file) {
+        showToast('File not found. Please re-upload.', '⚠️')
+        return
+      }
+
+      const isImage = file.type.startsWith('image/')
+      const isVideo = file.type.startsWith('video/')
+
+      const uploadResult = isImage
+        ? await uploadImage(file, spaceData.spaceId)
+        : isVideo
+        ? await uploadVideo(file, spaceData.spaceId)
+        : null
+
+      if (!uploadResult?.success) {
+        showToast('Failed to upload file. Please try again.', '❌')
+        return
+      }
+      mediaUrl = uploadResult.url
+    }
+
+    const memoryTypeMap: Record<string, MemoryType> = {
+      photos: MemoryType.PHOTO,
+      videos: MemoryType.VIDEO,
+      voice: MemoryType.AUDIO,
+      journal: MemoryType.JOURNAL,
+      location: MemoryType.NOTE,
+    }
+    const result = await addMemory({
+      spaceId: spaceData.spaceId,
+      ownerId: user.uid,
+      title: draft.title || 'Untitled Memory',
+      description: draft.description || undefined,
+      type: memoryTypeMap[draft.selectedMemoryType] ?? MemoryType.NOTE,
+      mediaUrl,
+      updatedAt: undefined,
+      metadata: {
+        fileName: draft.uploadedFileName,
+        date: draft.date || undefined,
+        location: draft.location || undefined,
+        mood: draft.mood ?? undefined,
+        weather: draft.weather ?? undefined,
+        people: draft.people.length > 0 ? draft.people : undefined,
+        category: draft.category || undefined,
+        tags: draft.tags.length > 0 ? draft.tags : undefined,
+        visibility: draft.visibility,
+        favorite: draft.favorite,
+        relationship: draft.relationship || undefined,
+      },
+    })
+    if (!result.success) {
+      showToast('Failed to save memory. Please try again.', '❌')
+      return
+    }
+
     addChapter({
       title: draft.title,
       description: draft.description,
@@ -60,9 +137,10 @@ export default function BottomActionBar() {
       visibility: draft.visibility,
       favorite: draft.favorite,
     })
+
     triggerSaveMemory()
     showToast('Memory Saved to StoryBook ✨', '📖')
-  }, [draft, addChapter, triggerSaveMemory, showToast])
+  }, [draft, addChapter, triggerSaveMemory, showToast, spaceData.spaceId, user])
 
   return (
     <>

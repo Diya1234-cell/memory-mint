@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/providers/AuthProvider'
+import { getSpacesForUser } from '@/services/firestoreService'
 
 export interface SpaceData {
+  spaceId?: string
   spaceName: string
   themeColor: string
   specialDate: string
@@ -23,41 +26,76 @@ const DEFAULT_SPACE_DATA: SpaceData = {
   category: 'Our Journey',
   coverPhoto: 'https://images.unsplash.com/photo-1501908731398-23b3efd7ccab?auto=format&fit=crop&w=600&q=80',
   themeColor: 'pink',
-  invites: [
-    { email: 'rahul@foreverremembered.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80', status: 'Accepted', time: 'Joined 2 days ago' },
-    { email: 'aanya.sharma@example.com', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80', status: 'Pending', time: 'Invited 5 mins ago' }
-  ]
+  invites: [],
+}
+
+function mapFirestoreSpace(doc: any): Partial<SpaceData> {
+  const d = doc
+  return {
+    spaceId: doc.id,
+    spaceName: d.spaceName || DEFAULT_SPACE_DATA.spaceName,
+    themeColor: d.themeColor || d.themeColor || DEFAULT_SPACE_DATA.themeColor,
+    specialDate: d.specialDate || DEFAULT_SPACE_DATA.specialDate,
+    relationshipEmoji: d.relationshipEmoji || DEFAULT_SPACE_DATA.relationshipEmoji,
+    description: d.description || DEFAULT_SPACE_DATA.description,
+    category: d.category || DEFAULT_SPACE_DATA.category,
+    isPrivate: d.isPrivate ?? DEFAULT_SPACE_DATA.isPrivate,
+    coverPhoto: d.coverPhoto || d.coverPhoto || DEFAULT_SPACE_DATA.coverPhoto,
+    selectedRelation: d.relationshipType || d.selectedRelation || DEFAULT_SPACE_DATA.selectedRelation,
+    invites: d.invites || [],
+  }
 }
 
 export function useSpaceData() {
+  const { user } = useAuth()
   const [spaceData, setSpaceData] = useState<SpaceData>(DEFAULT_SPACE_DATA)
   const [loading, setLoading] = useState(true)
 
-  const reloadData = () => {
-    const saved = localStorage.getItem('memory-universe-setup')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        setSpaceData(prev => ({ ...prev, ...parsed }))
-      } catch (e) {
-        console.error('Error parsing space data:', e)
-      }
-    }
-  };
-
   useEffect(() => {
-    reloadData()
-    setLoading(false)
+    if (!user) {
+      const saved = localStorage.getItem('memory-universe-setup')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setSpaceData(prev => ({ ...prev, ...parsed }))
+        } catch { /* ignore */ }
+      }
+      setLoading(false)
+      return
+    }
 
-    // Listen to storage changes to keep sidebar & dashboard components synchronized
-    const handleStorageChange = () => {
-      reloadData()
-    }
-    window.addEventListener('storage', handleStorageChange)
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [])
+    let cancelled = false
+    setLoading(true)
+
+    getSpacesForUser(user.uid).then((result) => {
+      if (cancelled) return
+      if (result.success && result.data.length > 0) {
+        const space = result.data[0] as any
+        setSpaceData(prev => ({ ...prev, ...mapFirestoreSpace(space) }))
+      } else {
+        const saved = localStorage.getItem('memory-universe-setup')
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved)
+            setSpaceData(prev => ({ ...prev, ...parsed }))
+          } catch { /* ignore */ }
+        }
+      }
+      setLoading(false)
+    }).catch(() => {
+      if (cancelled) return
+      const saved = localStorage.getItem('memory-universe-setup')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setSpaceData(prev => ({ ...prev, ...parsed }))
+        } catch { /* ignore */ }
+      }
+      setLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [user])
 
   const updateSpaceData = (newData: Partial<SpaceData>) => {
     const updated = { ...spaceData, ...newData }

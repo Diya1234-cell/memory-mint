@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { uploadImage } from '@/services/storageService'
+import { QRCodeSVG } from 'qrcode.react'
 import { 
   Heart, 
   Sparkles, 
@@ -20,6 +22,9 @@ import {
   Copy
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createSpace } from '@/services/spaceServices'
+import { useAuth } from '@/providers/AuthProvider'
+import { createInvite } from '@/services/firestoreService'
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49267
@@ -31,7 +36,6 @@ const fontLink = "https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&d
 
 export default function CreateSpacePage() {
   const router = useRouter()
-
   // Onboarding Wizard States
   const [step, setStep] = useState(1) // 1, 2, 3, or 4
   const [direction, setDirection] = useState(1) // for transition direction
@@ -46,24 +50,35 @@ export default function CreateSpacePage() {
   const [category, setCategory] = useState('Our Journey')
   const [isPrivate, setIsPrivate] = useState(true)
   const [coverPhoto, setCoverPhoto] = useState('https://images.unsplash.com/photo-1501908731398-23b3efd7ccab?auto=format&fit=crop&w=350&q=80')
+  const [inviteUrl, setInviteUrl] = useState('https://foreverremebered.com/join?invite=8xK')
   
   // Invite States for Step 3
   const [emailInput, setEmailInput] = useState('')
   const [copied, setCopied] = useState(false)
   const [invites, setInvites] = useState([
-    { email: 'aanya.sharma@email.com', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80', time: 'Invited 2m ago', status: 'Pending' },
-    { email: 'rahul.verma@email.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80', time: 'Invited 1h ago', status: 'Pending' },
-    { email: 'kavya.mehta@email.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', time: 'Invited 1d ago', status: 'Accepted' },
+    { email: 'alex@example.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', time: 'Invited 2m ago', status: 'Pending' },
+    { email: 'jordan@example.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80', time: 'Invited 1h ago', status: 'Pending' },
+    { email: 'taylor@example.com', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80', time: 'Invited 1d ago', status: 'Accepted' },
   ])
 
   // Mouse coordinates for spot glow & parallax
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 })
   
+  const { user, loading } = useAuth()
+
+  const [spaceId, setSpaceId] = useState<string | null>(null)
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+
   // Step 4 Success States
   const [isCtaHovered, setIsCtaHovered] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const objectUrlRef = useRef<string | null>(null)
+  const uploadVersionRef = useRef(0)
 
   // Floating Cosmic Particles State
   const [particles] = useState(() => 
@@ -101,6 +116,19 @@ export default function CreateSpacePage() {
     }
   }, [])
 
+  useEffect(() => {
+    setInviteUrl(`${window.location.origin}/join?invite=8xK`)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      uploadVersionRef.current += 1
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current)
+      }
+    }
+  }, [])
+
   // Theme details configuration
   const themeDetails = {
     purple: { name: 'Nebula Purple', color: '#a855f7', glow: 'rgba(168,85,247,0.4)', shadow: 'shadow-[0_0_20px_rgba(168,85,247,0.4)]', border: 'border-neonPurple/40', text: 'text-neonPurple' },
@@ -117,31 +145,90 @@ export default function CreateSpacePage() {
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText('foreverremebered.com/invite/8xK')
+    navigator.clipboard.writeText(inviteUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleAddInvite = (e: React.FormEvent) => {
+  const handleAddInvite = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!emailInput) return
-    setInvites([
-      {
-        email: emailInput,
-        avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 99999)}?auto=format&fit=crop&w=80&q=80`,
-        time: 'Invited just now',
-        status: 'Pending'
-      },
-      ...invites
-    ])
-    setEmailInput('')
+    if (!emailInput || !user) return
+
+    setInviteLoading(true)
+    setInviteError('')
+
+    try {
+      let currentSpaceId = spaceId
+      if (!currentSpaceId) {
+        const result = await createSpace(
+          spaceName,
+          user.uid,
+          selectedRelation ?? 'friends'
+        )
+        if (!result.success) {
+          setInviteError('Failed to create space.')
+          setInviteLoading(false)
+          return
+        }
+        currentSpaceId = result.id!
+        setSpaceId(currentSpaceId)
+      }
+
+      const inviteResult = await createInvite(
+        currentSpaceId,
+        user.uid,
+        emailInput
+      )
+      if (!inviteResult.success) {
+        setInviteError('Failed to create invite.')
+        setInviteLoading(false)
+        return
+      }
+
+      setInvites([
+        {
+          email: emailInput,
+          avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 99999)}?auto=format&fit=crop&w=80&q=80`,
+          time: 'Invited just now',
+          status: 'Pending'
+        },
+        ...invites
+      ])
+      setEmailInput('')
+    } catch {
+      setInviteError('Something went wrong.')
+    } finally {
+      setInviteLoading(false)
+    }
   }
 
-  const handleFinalEnter = (e: React.MouseEvent) => {
+  const handleFinalEnter = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setIsEnding(true)
-    
-    // Save details to localStorage
+    if (loading) {
+      return
+    }
+    if (!user) {
+      setCreateError('You must be logged in to create a space.')
+      return
+    }
+    if (!selectedRelation) {
+      setCreateError('Please select a relationship type.')
+      return
+    }
+    setCreateError('')
+    setIsLoading(true)
+
+    let resultSpaceId = spaceId
+    if (!resultSpaceId) {
+      const result = await createSpace(spaceName, user.uid, selectedRelation)
+      if (!result.success) {
+        setCreateError(result.error?.message ?? 'Failed to create space.')
+        setIsLoading(false)
+        return
+      }
+      resultSpaceId = result.id!
+    }
+
     const setupData = {
       spaceName,
       themeColor,
@@ -152,10 +239,12 @@ export default function CreateSpacePage() {
       isPrivate,
       coverPhoto,
       selectedRelation,
-      invites
+      invites,
+      spaceId: resultSpaceId,
     }
     localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
 
+    setIsEnding(true)
     setTimeout(() => {
       router.push('/dashboard')
     }, 1000)
@@ -167,9 +256,59 @@ export default function CreateSpacePage() {
     'https://images.unsplash.com/photo-1494905998402-395d579af36f?auto=format&fit=crop&w=350&q=80'
   ]
 
+  const saveCoverPhoto = (nextCoverPhoto: string, objectUrl?: string) => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+    }
+    objectUrlRef.current = objectUrl ?? null
+    setCoverPhoto(nextCoverPhoto)
+
+    const setupData = {
+      spaceName,
+      themeColor,
+      specialDate,
+      relationshipEmoji,
+      description,
+      category,
+      isPrivate,
+      coverPhoto: nextCoverPhoto,
+      selectedRelation,
+      invites
+    }
+    localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
+    window.dispatchEvent(new Event('storage'))
+  }
+
+  const handleCoverImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+
+    const supportedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic']
+    const hasSupportedExtension = /\.(jpe?g|png|webp|gif|heic)$/i.test(file.name)
+    if (!supportedImageTypes.includes(file.type) && !hasSupportedExtension) return
+
+    const uploadVersion = ++uploadVersionRef.current
+    const objectUrl = URL.createObjectURL(file)
+    saveCoverPhoto(objectUrl, objectUrl)
+
+    if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
+      const result = await uploadImage(file, 'pending-space')
+      if (result.success && uploadVersion === uploadVersionRef.current) {
+        saveCoverPhoto(result.url)
+      }
+    }
+  }
+
   const handleCycleCover = () => {
+    uploadVersionRef.current += 1
     const currentIndex = presetPhotos.indexOf(coverPhoto)
     const nextIndex = (currentIndex + 1) % presetPhotos.length
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+    }
     setCoverPhoto(presetPhotos[nextIndex])
   }
 
@@ -196,6 +335,22 @@ export default function CreateSpacePage() {
 
   const currentTheme = themeDetails[themeColor as keyof typeof themeDetails] || themeDetails.pink
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login')
+    }
+  }, [loading, user, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!user) return null
+
   return (
     <div className={`relative min-h-screen text-slate-100 font-sans overflow-x-hidden pb-12 flex flex-col justify-between transition-opacity duration-1000 ease-out ${
       isEnding ? 'opacity-0' : 'opacity-100'
@@ -204,11 +359,12 @@ export default function CreateSpacePage() {
       {/* CSS Styles for GPU-optimized animations and glare effects */}
       <style jsx global>{`
         @keyframes scan {
-          0%, 100% { transform: translate3d(0, 4px, 0); opacity: 0.8; }
-          50% { transform: translate3d(0, 136px, 0); opacity: 0.8; }
+          0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.8; }
+          50% { transform: translate3d(0, 48px, 0); opacity: 0.8; }
         }
         .scan-line {
           position: absolute;
+          top: 120px;
           left: 4%;
           right: 4%;
           height: 2px;
@@ -835,7 +991,7 @@ export default function CreateSpacePage() {
                         </label>
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div 
-                            onClick={handleCycleCover}
+                            onClick={() => inputRef.current?.click()}
                             className="border border-dashed border-white/10 rounded-xl bg-black/20 p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-black/30 transition-all"
                           >
                             <Upload className="w-5 h-5 text-gray-400 mb-2" />
@@ -846,6 +1002,13 @@ export default function CreateSpacePage() {
                               Browse Files
                             </span>
                           </div>
+                          <input
+                            ref={inputRef}
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            onChange={handleCoverImageChange}
+                          />
 
                           <div className="rounded-xl overflow-hidden relative aspect-[1.8] bg-black/40 border border-white/5">
                             <div className="absolute inset-0 bg-cover bg-center opacity-85 transition-all duration-300" style={{ backgroundImage: `url('${coverPhoto}')` }}></div>
@@ -1015,11 +1178,13 @@ export default function CreateSpacePage() {
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2.5 bg-gradient-to-r from-neonPink to-neonPurple text-white text-xs font-bold rounded-xl shadow-glow-pink hover:scale-105 active:scale-95 transition-all duration-300 flex-shrink-0"
+                        disabled={inviteLoading}
+                        className="px-4 py-2.5 bg-gradient-to-r from-neonPink to-neonPurple text-white text-xs font-bold rounded-xl shadow-glow-pink hover:scale-105 active:scale-95 transition-all duration-300 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
-                        Invite
+                        {inviteLoading ? '...' : 'Invite'}
                       </button>
                     </form>
+                    {inviteError ? <p className="text-xs text-rose-400 mt-2">{inviteError}</p> : null}
                   </div>
 
                   {/* Column 2: Share Link */}
@@ -1038,7 +1203,7 @@ export default function CreateSpacePage() {
                       <input
                         type="text"
                         readOnly
-                        value="foreverremebered.com/invite/8xK"
+                        value={inviteUrl.replace(/^https?:\/\//, '')}
                         className="flex-1 bg-black/40 border border-white/10 text-gray-400 rounded-xl py-2.5 px-3 focus:outline-none text-xs truncate"
                       />
                       <button
@@ -1069,18 +1234,15 @@ export default function CreateSpacePage() {
                     </div>
 
                     <div className="mt-4 flex justify-center z-10">
-                      <div className="p-1 rounded-xl bg-[#0c071e]/90 border border-neonPink/30 shadow-[0_0_15px_rgba(255,75,145,0.25)]">
-                        <svg className="w-14 h-14 text-neonPink fill-current animate-pulse" viewBox="0 0 100 100">
-                          <path d="M10 10 h25 v25 h-25 z M10 20 h15 M20 10 v15 M15 15 h5" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <path d="M65 10 h25 v25 h-25 z M65 20 h15 M75 10 v15 M70 15 h5" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <path d="M10 65 h25 v25 h-25 z M10 75 h15 M20 65 v15 M15 70 h5" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <rect x="45" y="15" width="8" height="8" />
-                          <rect x="55" y="25" width="6" height="6" />
-                          <rect x="75" y="45" width="8" height="8" />
-                          <rect x="45" y="65" width="10" height="5" />
-                          <rect x="65" y="75" width="5" height="10" />
-                          <rect x="80" y="80" width="8" height="8" />
-                        </svg>
+                      <div className="p-1 rounded-xl bg-white border border-neonPink/30 shadow-[0_0_15px_rgba(255,75,145,0.25)]">
+                        <QRCodeSVG
+                          value={inviteUrl}
+                          size={68}
+                          level="M"
+                          marginSize={2}
+                          fgColor="#12071e"
+                          bgColor="#ffffff"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1223,12 +1385,14 @@ export default function CreateSpacePage() {
                       </p>
                     </div>
 
+                    {createError ? <p className="text-sm text-rose-400 text-center">{createError}</p> : null}
+
                     {/* Large CTA with emitter hover particles */}
                     <button
                       onMouseEnter={() => setIsCtaHovered(true)}
                       onMouseLeave={() => setIsCtaHovered(false)}
                       onClick={handleFinalEnter}
-                      disabled={isEnding}
+                      disabled={loading || isEnding || isLoading}
                       className="relative px-8 py-4.5 bg-gradient-to-r from-neonPink to-neonPurple text-white font-extrabold rounded-2xl shadow-glow-pink hover:scale-105 active:scale-95 hover:shadow-[0_0_35px_rgba(255,75,145,0.7)] active:shadow-glow-pink transition-all duration-300 flex items-center gap-3 w-full sm:w-auto text-center justify-center cursor-pointer text-sm z-10"
                     >
                       <span>Enter Memory Universe</span>

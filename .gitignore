@@ -1,3 +1,8 @@
 node_modules/
 .next/
+<<<<<<< HEAD
 .envgit add .
+=======
+.env
+.env.local
+>>>>>>> 5395b4c9ac43711a0ee34327f4d4030630e69ddc

@@ -25,6 +25,8 @@ import {
 import { motion } from 'framer-motion'
 
 import { useSpaceData } from '@/hooks/useSpaceData'
+import { useDashboardData } from '@/hooks/useDashboardData'
+import { useAuth } from '@/providers/AuthProvider'
 import { MemoryGalaxy } from '@/components/ui/MemoryGalaxy'
 import AIPulseModal from '@/components/ui/AIPulseModal'
 
@@ -32,6 +34,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const { spaceData } = useSpaceData()
+  const { stats: firestoreStats } = useDashboardData()
+  const { user } = useAuth()
   const activeSpace = spaceData.spaceName
 
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
@@ -136,9 +140,9 @@ export default function DashboardPage() {
   
   // Quick stats array to display inside Hero Section
   const stats = [
-    { label: 'Memories', value: '42', icon: '📸', color: activeTheme.text },
-    { label: 'Days Shared', value: '120', icon: '📅', color: 'text-neonPurple' },
-    { label: 'Members', value: '2', icon: '🫂', color: 'text-blue-400' },
+    { label: 'Memories', value: String(firestoreStats.memoryCount), icon: '📸', color: activeTheme.text },
+    { label: 'Days Shared', value: String(firestoreStats.daysShared), icon: '📅', color: 'text-neonPurple' },
+    { label: 'Members', value: String(firestoreStats.memberCount), icon: '🫂', color: 'text-blue-400' },
     { label: 'Security', value: '100%', icon: '🔒', color: 'text-emerald-400' }
   ]
 
@@ -180,13 +184,11 @@ export default function DashboardPage() {
 
           {/* User Profile */}
           <div className="flex items-center gap-2">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
-              alt="Profile"
-              className="w-8 h-8 rounded-xl object-cover border border-white/10 shadow-md"
-            />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-neonPink to-neonPurple flex items-center justify-center text-white text-sm font-bold border border-white/10 shadow-md">
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
             <div className="hidden lg:block text-left">
-              <span className="text-[10px] font-extrabold text-white block leading-tight">Diya Sharma</span>
+              <span className="text-[10px] font-extrabold text-white block leading-tight">{user?.email?.split('@')[0] || 'User'}</span>
               <span className="text-[8px] text-gray-400 block font-bold uppercase tracking-wider mt-0.5">Creator</span>
             </div>
           </div>
@@ -281,6 +283,7 @@ export default function DashboardPage() {
                 
                 {/* Action 1: Upload Memory */}
                 <motion.div
+                  onClick={() => router.push('/upload')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-pink-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -306,6 +309,7 @@ export default function DashboardPage() {
 
                 {/* Action 2: Generate Story */}
                 <motion.div
+                  onClick={() => router.push('/storybook')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-purple-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -327,6 +331,7 @@ export default function DashboardPage() {
 
                 {/* Action 3: Write Letter */}
                 <motion.div
+                  onClick={() => router.push('/letters')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-fuchsia-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -348,6 +353,7 @@ export default function DashboardPage() {
 
                 {/* Action 4: Create Time Capsule */}
                 <motion.div
+                  onClick={() => router.push('/letters')}
                   onMouseMove={handleMouseMove}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="glass-panel border border-white/5 bg-[#120a22]/30 p-4.5 rounded-3xl relative overflow-hidden group hover:border-blue-500/20 hover:bg-[#120a22]/50 shadow-lg cursor-pointer transition-all duration-300 flex flex-col justify-between h-[155px] before:absolute before:inset-0 before:bg-[radial-gradient(180px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
@@ -660,156 +666,43 @@ export default function DashboardPage() {
                   
                   {/* Horizontal scroll container */}
                   <div ref={memoriesScrollRef} className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x snap-mandatory relative z-10">
-                    
-                    {/* Memory Card 1: Goa Trip */}
-                    <motion.div
-                      onMouseMove={handleMouseMove}
-                      whileHover={{ y: -6, scale: 1.02 }}
-                      className="glass-panel border border-white/5 bg-[#120a22]/30 p-3 rounded-3xl flex flex-col justify-start h-[262px] min-w-[192px] w-[192px] relative overflow-hidden group hover:border-white/10 hover:bg-[#120a22]/40 transition-all duration-300 snap-start before:absolute before:inset-0 before:bg-[radial-gradient(150px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-out pointer-events-none" />
-                      
-                      {/* Image block */}
-                      <div className="w-full h-28 rounded-2xl overflow-hidden relative border border-white/5 bg-black/20 z-10">
-                        <img 
-                          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=250&q=80" 
-                          alt="Goa Trip"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                    {firestoreStats.recentMemories.length === 0 && (
+                      <div className="flex items-center justify-center w-full h-[262px] text-gray-500 text-xs">
+                        No memories yet. Upload your first memory!
                       </div>
-
-                      {/* Content details */}
-                      <div className="relative z-10">
-                        <span className="text-[8px] text-gray-500 font-extrabold tracking-wide uppercase mt-2.5 block">
-                          16 May 2024
-                        </span>
-                        <h4 className="text-xs font-extrabold text-white tracking-tight mt-0.5 truncate flex items-center gap-1">
-                          Goa Trip 🌊
-                        </h4>
+                    )}
+                    {firestoreStats.recentMemories.map((mem) => (
+                      <motion.div
+                        key={mem.id}
+                        onMouseMove={handleMouseMove}
+                        whileHover={{ y: -6, scale: 1.02 }}
+                        className="glass-panel border border-white/5 bg-[#120a22]/30 p-3 rounded-3xl flex flex-col justify-start h-[262px] min-w-[192px] w-[192px] relative overflow-hidden group hover:border-white/10 hover:bg-[#120a22]/40 transition-all duration-300 snap-start before:absolute before:inset-0 before:bg-[radial-gradient(150px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-out pointer-events-none" />
                         
-                        <div>
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-wider mt-2.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                            Happy
-                          </span>
+                        <div className="w-full h-28 rounded-2xl overflow-hidden relative border border-white/5 bg-black/20 z-10">
+                          <img 
+                            src={mem.mediaUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=250&q=80'} 
+                            alt={mem.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
                         </div>
 
-                        <p className="text-[10px] text-gray-400 mt-2.5 leading-relaxed italic line-clamp-3">
-                          &ldquo;The ocean, the sunset and endless talks.&rdquo;
-                        </p>
-                      </div>
-                    </motion.div>
-
-                    {/* Memory Card 2: Late Night Call */}
-                    <motion.div
-                      onMouseMove={handleMouseMove}
-                      whileHover={{ y: -6, scale: 1.02 }}
-                      className="glass-panel border border-white/5 bg-[#120a22]/30 p-3 rounded-3xl flex flex-col justify-start h-[262px] min-w-[192px] w-[192px] relative overflow-hidden group hover:border-white/10 hover:bg-[#120a22]/40 transition-all duration-300 snap-start before:absolute before:inset-0 before:bg-[radial-gradient(150px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-out pointer-events-none" />
-                      
-                      <div className="w-full h-28 rounded-2xl overflow-hidden relative border border-white/5 bg-black/20 z-10">
-                        <img 
-                          src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=250&q=80" 
-                          alt="Late Night Call"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </div>
-
-                      <div className="relative z-10">
-                        <span className="text-[8px] text-gray-500 font-extrabold tracking-wide uppercase mt-2.5 block">
-                          21 May 2024
-                        </span>
-                        <h4 className="text-xs font-extrabold text-white tracking-tight mt-0.5 truncate flex items-center gap-1">
-                          Late Night Call 🌙
-                        </h4>
-
-                        <div>
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-wider mt-2.5 bg-pink-500/10 text-neonPink border border-pink-500/20">
-                            Love
+                        <div className="relative z-10">
+                          <span className="text-[8px] text-gray-500 font-extrabold tracking-wide uppercase mt-2.5 block">
+                            {mem.createdAt ? new Date(mem.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
                           </span>
+                          <h4 className="text-xs font-extrabold text-white tracking-tight mt-0.5 truncate flex items-center gap-1">
+                            {mem.title}
+                          </h4>
+                          
+                          <p className="text-[10px] text-gray-400 mt-2.5 leading-relaxed italic line-clamp-3">
+                            &ldquo;{mem.description || 'A precious memory.'}&rdquo;
+                          </p>
                         </div>
-
-                        <p className="text-[10px] text-gray-400 mt-2.5 leading-relaxed italic line-clamp-3">
-                          &ldquo;Those random calls mean everything.&rdquo;
-                        </p>
-                      </div>
-                    </motion.div>
-
-                    {/* Memory Card 3: Our First Date */}
-                    <motion.div
-                      onMouseMove={handleMouseMove}
-                      whileHover={{ y: -6, scale: 1.02 }}
-                      className="glass-panel border border-white/5 bg-[#120a22]/30 p-3 rounded-3xl flex flex-col justify-start h-[262px] min-w-[192px] w-[192px] relative overflow-hidden group hover:border-white/10 hover:bg-[#120a22]/40 transition-all duration-300 snap-start before:absolute before:inset-0 before:bg-[radial-gradient(150px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-out pointer-events-none" />
-                      
-                      <div className="w-full h-28 rounded-2xl overflow-hidden relative border border-white/5 bg-black/20 z-10">
-                        <img 
-                          src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=250&q=80" 
-                          alt="Our First Date"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </div>
-
-                      <div className="relative z-10">
-                        <span className="text-[8px] text-gray-500 font-extrabold tracking-wide uppercase mt-2.5 block">
-                          12 May 2024
-                        </span>
-                        <h4 className="text-xs font-extrabold text-white tracking-tight mt-0.5 truncate flex items-center gap-1">
-                          Our First Date 🧑‍❤️‍🧑
-                        </h4>
-
-                        <div>
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-wider mt-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            Special
-                          </span>
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 mt-2.5 leading-relaxed italic line-clamp-3">
-                          &ldquo;The beginning of our forever story.&rdquo;
-                        </p>
-                      </div>
-                    </motion.div>
-
-                    {/* Memory Card 4: Himachal Trip */}
-                    <motion.div
-                      onMouseMove={handleMouseMove}
-                      whileHover={{ y: -6, scale: 1.02 }}
-                      className="glass-panel border border-white/5 bg-[#120a22]/30 p-3 rounded-3xl flex flex-col justify-start h-[262px] min-w-[192px] w-[192px] relative overflow-hidden group hover:border-white/10 hover:bg-[#120a22]/40 transition-all duration-300 snap-start before:absolute before:inset-0 before:bg-[radial-gradient(150px_circle_at_var(--mx,0px)_var(--my,0px),rgba(255,255,255,0.05),transparent_80%)] before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 before:pointer-events-none"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] group-hover:left-[200%] transition-all duration-1000 ease-out pointer-events-none" />
-                      
-                      <div className="w-full h-28 rounded-2xl overflow-hidden relative border border-white/5 bg-black/20 z-10">
-                        <img 
-                          src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=250&q=80" 
-                          alt="Himachal Trip"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </div>
-
-                      <div className="relative z-10">
-                        <span className="text-[8px] text-gray-500 font-extrabold tracking-wide uppercase mt-2.5 block">
-                          1 Jun 2024
-                        </span>
-                        <h4 className="text-xs font-extrabold text-white tracking-tight mt-0.5 truncate flex items-center gap-1">
-                          Himachal Trip 🌲
-                        </h4>
-
-                        <div>
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-wider mt-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            Adventure
-                          </span>
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 mt-2.5 leading-relaxed italic line-clamp-3">
-                          &ldquo;Mountains, cold breeze and warm hugs.&rdquo;
-                        </p>
-                      </div>
-                    </motion.div>
+                      </motion.div>
+                    ))}
 
                   </div>
 
@@ -1222,33 +1115,33 @@ export default function DashboardPage() {
 
               </div>
 
-              {/* 2x2 Grid Statistics */}
-              <div className="grid grid-cols-2 gap-y-5 gap-x-4 pt-5 border-t border-white/5 mt-2 text-center relative z-10">
-                <div>
-                  <span className="text-base font-extrabold text-white block leading-tight">842</span>
-                  <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
-                    Days Together
-                  </span>
-                </div>
-                <div>
-                  <span className="text-base font-extrabold text-white block leading-tight">143</span>
-                  <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
-                    Day Streak
-                  </span>
-                </div>
-                <div>
-                  <span className="text-base font-extrabold text-white block leading-tight">34</span>
-                  <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
-                    Adventures
-                  </span>
-                </div>
-                <div>
-                  <span className="text-base font-extrabold text-white block leading-tight">18</span>
-                  <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
-                    Milestones
-                  </span>
-                </div>
-              </div>
+                  {/* 2x2 Grid Statistics */}
+                  <div className="grid grid-cols-2 gap-y-5 gap-x-4 pt-5 border-t border-white/5 mt-2 text-center relative z-10">
+                    <div>
+                      <span className="text-base font-extrabold text-white block leading-tight">{firestoreStats.daysShared}</span>
+                      <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
+                        Days Together
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-base font-extrabold text-white block leading-tight">{firestoreStats.memoryCount}</span>
+                      <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
+                        Memories
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-base font-extrabold text-white block leading-tight">{firestoreStats.memberCount}</span>
+                      <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
+                        Members
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-base font-extrabold text-white block leading-tight">100%</span>
+                      <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5 block">
+                        Secure
+                      </span>
+                    </div>
+                  </div>
             </article>
 
             {/* Widget 2: Today's Prompt */}
@@ -1364,10 +1257,10 @@ export default function DashboardPage() {
         onClose={() => setIsAiModalOpen(false)}
         spaceData={spaceData}
         stats={{
-          daysTogether: 842,
-          streak: 143,
-          adventures: 34,
-          milestones: 18,
+          daysTogether: firestoreStats.daysShared,
+          streak: firestoreStats.memoryCount,
+          adventures: Math.floor(firestoreStats.memoryCount / 3),
+          milestones: Math.floor(firestoreStats.memoryCount / 5),
         }}
         activeTheme={activeTheme}
       />

@@ -1,12 +1,13 @@
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getFirebaseApp } from "@/lib/firebase";
 
-const storage = getStorage(getFirebaseApp());
+const firebaseApp = getFirebaseApp();
+const storage = firebaseApp ? getStorage(firebaseApp) : null;
 
-export function getFirebaseStorage(): FirebaseStorage {
+export function getFirebaseStorage(): FirebaseStorage | null {
   return storage;
 }
 
-export function storageHelper(): FirebaseStorage {
+export function storageHelper(): FirebaseStorage | null {
   return storage;
 }

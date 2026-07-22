@@ -10,6 +10,8 @@ import HeroSection from '@/features/landing/components/HeroSection'
 import FeatureCards from '@/features/landing/components/FeatureCards'
 import CosmicBackground from '@/features/landing/components/CosmicBackground'
 import AuthModal from '@/features/landing/components/AuthModal'
+import { useAuth } from '@/providers/AuthProvider'
+import { hasUserSpace } from '@/services/firestoreService'
 
 function lcg(seed: number) {
   let s = seed >>> 0
@@ -22,10 +24,17 @@ function lcg(seed: number) {
 export default function HomePage() {
   const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const { user, loading } = useAuth()
 
-  const handleStartJourney = () => {
+  const handleStartJourney = async () => {
+    if (loading) return
     setIsTransitioning(true)
-    setTimeout(() => router.push('/create-space'), 500)
+    if (!user) {
+      setTimeout(() => router.push('/login'), 500)
+      return
+    }
+    const exists = await hasUserSpace(user.uid)
+    setTimeout(() => router.push(exists ? '/dashboard' : '/create-space'), 500)
   }
 
   return (

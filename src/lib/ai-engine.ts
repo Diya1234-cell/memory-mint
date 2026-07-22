@@ -30,19 +30,20 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
   if (!apiKey) return null;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: `${systemPrompt}\n\nUser request: ${userPrompt}` }
-            ]
+            parts: [{ text: userPrompt }]
           }
         ],
         generationConfig: {
@@ -53,7 +54,19 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
     });
 
     if (!response.ok) {
-      console.warn('Gemini API request failed:', response.statusText);
+      const errorBody = await response.text();
+      let errorDetail = response.statusText;
+      try {
+        const parsed = JSON.parse(errorBody);
+        if (parsed.error?.message) errorDetail = parsed.error.message;
+        if (parsed.error?.code) errorDetail += ` (code ${parsed.error.code})`;
+      } catch {}
+      console.warn(`Gemini API error [${response.status}]: ${errorDetail}`);
+      if (response.status === 429) {
+        console.warn('Rate limited by Gemini API.');
+      } else if (response.status === 404 || response.status === 400) {
+        console.warn('Check model name or request structure.');
+      }
       return null;
     }
 
@@ -208,4 +221,129 @@ export async function askAiAdvisor(prompt: string, spaceData: any): Promise<stri
 
   // Default fallback
   return `✨ **AI Advisor:** I'm tuned to your space, "${name}". Remember, strong relationships aren't built on monumental events, but on the tiny, consistent particles of care you exchange daily. Add a quick memory, complete today's quest, and watch your connection grow!`;
+}
+
+/**
+ * Generates a short, poetic caption for a memory.
+ */
+export async function generateMemoryCaption(
+  title: string,
+  description?: string,
+  location?: string,
+  date?: string,
+  people?: string[],
+): Promise<string> {
+  const systemPrompt = `You are a poetic memory caption writer. Generate a short, beautiful, emotional caption (1-2 sentences, under 30 words) for a memory based on the provided details. Return ONLY the caption text, no extra formatting, no markdown.`;
+  const parts = [`Memory title: "${title}"`];
+  if (description) parts.push(`Description: "${description}"`);
+  if (location) parts.push(`Location: "${location}"`);
+  if (date) parts.push(`Date: "${date}"`);
+  if (people?.length) parts.push(`People: ${people.join(', ')}`);
+  const userPrompt = parts.join('\n');
+
+  const geminiText = await callGemini(systemPrompt, userPrompt);
+  if (geminiText) return geminiText.trim();
+
+  const fallbacks = [
+    `"${title}" — a moment etched in the stars, forever glowing in our constellation of memories.`,
+    `Every great story begins with a single page. "${title}" is one of our most beautiful chapters.`,
+    `The stars aligned for "${title}" — a memory carried across lifetimes.`,
+    `Wrapped in golden light, "${title}" lives in the softest corner of our hearts.`,
+  ];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+/**
+ * Weaves a narrative story from a collection of chapter snapshots.
+ */
+export async function generateStoryFromChapters(
+  title: string,
+  chapters: { title: string; description?: string }[],
+): Promise<string> {
+  if (!chapters.length) return 'Add a few memory chapters first, then I can weave them into a story.';
+
+  const systemPrompt = `You are a heartfelt storyteller. Given a memory title and a collection of chapter snapshots, weave them into one short, warm, narrative paragraph (3-5 sentences) that connects them in a meaningful way. Return ONLY the story paragraph, no markdown.`;
+  const chapterText = chapters.map((c, i) => `Chapter ${i + 1}: "${c.title}"${c.description ? ` — ${c.description}` : ''}`).join('\n');
+  const userPrompt = `Memory: "${title}"\n${chapterText}`;
+
+  const geminiText = await callGemini(systemPrompt, userPrompt);
+  if (geminiText) return geminiText.trim();
+
+  return `"${title}" unfolds through ${chapters.length} beautiful moments. ${chapters.map(c => c.title).join(', ')} — each one a thread in the tapestry of this cherished memory. Together they paint a story that words can barely capture but the heart remembers forever.`;
+}
+
+/**
+ * Generates a rich, vivid summary/description of a memory.
+ */
+export async function generateMemorySummary(
+  title: string,
+  description?: string,
+  location?: string,
+  date?: string,
+): Promise<string> {
+  const systemPrompt = `You are a poetic memory describer. Write a warm, vivid 2-3 sentence description of the memory based on the provided details. Return ONLY the description, no markdown.`;
+  const parts = [`Memory title: "${title}"`];
+  if (description) parts.push(`Description: "${description}"`);
+  if (location) parts.push(`Location: "${location}"`);
+  if (date) parts.push(`Date: "${date}"`);
+  const userPrompt = parts.join('\n');
+
+  const geminiText = await callGemini(systemPrompt, userPrompt);
+  if (geminiText) return geminiText.trim();
+
+  const fallbacks = [
+    `A quiet moment wrapped in golden light — "${title}" is a treasure tucked away in the heart's most sacred archive.${location ? ` The air at ${location} held something magical that day.` : ''}`,
+    `"${title}" — a snapshot of pure connection. The laughter, the stillness, the way the world seemed to pause just for us.${date ? ` Forever ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.` : ''}`,
+    `Some memories you don't just remember — you feel them in your bones. "${title}" is one of them.`,
+  ];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+/**
+ * Analyzes a memory and returns an emotional/mood insight.
+ */
+export async function generateMoodInsight(
+  title: string,
+  description?: string,
+  mood?: number | null,
+): Promise<string> {
+  const moodNames: Record<number, string> = {
+    0: 'Joyful', 1: 'Peaceful', 2: 'Romantic', 3: 'Nostalgic', 4: 'Excited',
+    5: 'Grateful', 6: 'Playful', 7: 'Cosmic', 8: 'Melancholic', 9: 'Serene',
+  };
+
+  const systemPrompt = `You are an emotional intelligence guide. Given a memory and its mood, write 1-2 sentences exploring the emotional resonance of this moment. Return ONLY the insight text, no markdown.`;
+  const userPrompt = `Memory: "${title}"${description ? `, Description: "${description}"` : ''}${mood !== null && mood !== undefined ? `, Mood: ${moodNames[mood] || 'Unknown'}` : ''}`;
+
+  const geminiText = await callGemini(systemPrompt, userPrompt);
+  if (geminiText) return geminiText.trim();
+
+  const moodName = mood !== null && mood !== undefined ? moodNames[mood] || 'Beautiful' : 'Beautiful';
+  return `This memory radiates a ${moodName.toLowerCase()} energy. It's one of those moments where the heart knew exactly what mattered most, even if words couldn't capture it at the time.`;
+}
+
+/**
+ * Suggests relevant tags for a memory.
+ */
+export async function generateTags(
+  title: string,
+  description?: string,
+  location?: string,
+): Promise<string[]> {
+  const systemPrompt = `You are a memory tagging assistant. Based on the memory details, suggest 4-6 relevant, single-word or short-phrase tags that describe the essence of the memory. Return ONLY a comma-separated list of tags, no markdown, no numbering.`;
+  const parts = [`Memory title: "${title}"`];
+  if (description) parts.push(`Description: "${description}"`);
+  if (location) parts.push(`Location: "${location}"`);
+  const userPrompt = parts.join('\n');
+
+  const geminiText = await callGemini(systemPrompt, userPrompt);
+  if (geminiText) {
+    return geminiText
+      .split(',')
+      .map(t => t.replace(/^[#\s*•\-]+/, '').trim())
+      .filter(Boolean)
+      .slice(0, 6);
+  }
+
+  return ['cherished', 'heartfelt', 'special', 'memory', 'treasured'];
 }
