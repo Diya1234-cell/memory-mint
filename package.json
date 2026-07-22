@@ -2,13 +2,13 @@
   "name": "memory-mint",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
-  },
+ "scripts": {
+  "dev": "next dev --webpack",
+  "build": "next build --webpack",
+  "start": "next start",
+  "lint": "next lint",
+  "type-check": "tsc --noEmit"
+},
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.0",
     "autoprefixer": "^10.5.4",
