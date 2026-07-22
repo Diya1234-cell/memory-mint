@@ -10,7 +10,6 @@ import {
   Plus, 
   Calendar, 
   BookOpen, 
-  Clock, 
   Users, 
   ChevronDown,
   Activity,

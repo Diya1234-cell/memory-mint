@@ -10,7 +10,6 @@ import {
   Play, 
   Pause, 
   SkipForward,
-  Volume2
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
