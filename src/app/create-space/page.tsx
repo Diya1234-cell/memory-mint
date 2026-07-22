@@ -335,6 +335,22 @@ export default function CreateSpacePage() {
 
   const currentTheme = themeDetails[themeColor as keyof typeof themeDetails] || themeDetails.pink
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login')
+    }
+  }, [loading, user, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!user) return null
+
   return (
     <div className={`relative min-h-screen text-slate-100 font-sans overflow-x-hidden pb-12 flex flex-col justify-between transition-opacity duration-1000 ease-out ${
       isEnding ? 'opacity-0' : 'opacity-100'

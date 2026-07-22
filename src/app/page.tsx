@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { Heart, Sparkles, ArrowRight, CheckCircle2, Clock, Star } from 'lucide-react'
 
@@ -9,6 +10,8 @@ import HeroSection from '@/features/landing/components/HeroSection'
 import FeatureCards from '@/features/landing/components/FeatureCards'
 import CosmicBackground from '@/features/landing/components/CosmicBackground'
 import AuthModal from '@/features/landing/components/AuthModal'
+import { useAuth } from '@/providers/AuthProvider'
+import { hasUserSpace } from '@/services/firestoreService'
 
 function lcg(seed: number) {
   let s = seed >>> 0
@@ -19,14 +22,22 @@ function lcg(seed: number) {
 }
 
 export default function HomePage() {
+  const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const { user } = useAuth()
 
-  const handleStartJourney = () => {
+  const handleStartJourney = async () => {
     setIsTransitioning(true)
-    setTimeout(() => {
-      setIsTransitioning(false)
-      window.dispatchEvent(new CustomEvent('open-auth'))
-    }, 500)
+    if (!user) {
+      setTimeout(() => {
+        setIsTransitioning(false)
+        window.dispatchEvent(new CustomEvent('open-auth'))
+      }, 500)
+      return
+    }
+
+    const exists = await hasUserSpace(user.uid)
+    setTimeout(() => router.push(exists ? '/dashboard' : '/create-space'), 500)
   }
 
   return (
