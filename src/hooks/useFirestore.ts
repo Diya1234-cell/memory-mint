@@ -14,8 +14,9 @@ export function useFirestore(userId?: string | null, spaceId?: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !db) {
       setSpaces([]);
+      setLoading(false);
       return;
     }
     let loaded = false;
@@ -35,8 +36,9 @@ export function useFirestore(userId?: string | null, spaceId?: string | null) {
   }, [userId]);
 
   useEffect(() => {
-    if (!spaceId) {
+    if (!spaceId || !db) {
       setMemories([]);
+      setLoading(false);
       return;
     }
     let loaded = false;

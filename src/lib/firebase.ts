@@ -1,7 +1,7 @@
 import { FirebaseApp, FirebaseOptions, getApps, getApp, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 export const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
@@ -12,15 +12,44 @@ export const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
 };
 
-const app: FirebaseApp = !getApps().length
-  ? initializeApp(firebaseConfig)
-  : getApp();
+const hasFirebaseConfig = [
+  firebaseConfig.apiKey,
+  firebaseConfig.authDomain,
+  firebaseConfig.projectId,
+  firebaseConfig.storageBucket,
+  firebaseConfig.messagingSenderId,
+  firebaseConfig.appId,
+].every((value) => typeof value === "string" && value.trim().length > 0);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
-export function getFirebaseApp(): FirebaseApp {
+try {
+  if (getApps().length > 0) {
+    app = getApp();
+  } else if (hasFirebaseConfig) {
+    app = initializeApp(firebaseConfig);
+  }
+
+  if (app) {
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  }
+} catch (error) {
+  console.error("Firebase failed to initialize:", error);
+  app = null;
+  auth = null;
+  db = null;
+  storage = null;
+}
+
+export const isFirebaseConfigured = Boolean(app);
+export { auth, db, storage };
+
+export function getFirebaseApp(): FirebaseApp | null {
   return app;
 }
 

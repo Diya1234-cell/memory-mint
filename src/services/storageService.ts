@@ -6,7 +6,13 @@ import {
   deleteObject,
 } from "firebase/storage";
 
+const FIREBASE_UNAVAILABLE_MESSAGE = "Firebase is not configured in this environment.";
+
 export async function uploadImage(file: File, spaceId: string) {
+  if (!storage) {
+    return { success: false, error: new Error(FIREBASE_UNAVAILABLE_MESSAGE) } as const;
+  }
+
   try {
     const ext = file.name.split(".").pop() ?? "jpg";
     const fileName = `${crypto.randomUUID()}.${ext}`;
@@ -21,6 +27,10 @@ export async function uploadImage(file: File, spaceId: string) {
 }
 
 export async function uploadVideo(file: File, spaceId: string) {
+  if (!storage) {
+    return { success: false, error: new Error(FIREBASE_UNAVAILABLE_MESSAGE) } as const;
+  }
+
   try {
     const ext = file.name.split(".").pop() ?? "mp4";
     const fileName = `${crypto.randomUUID()}.${ext}`;
@@ -35,6 +45,10 @@ export async function uploadVideo(file: File, spaceId: string) {
 }
 
 export async function deleteFile(filePath: string) {
+  if (!storage) {
+    return { success: false, error: new Error(FIREBASE_UNAVAILABLE_MESSAGE) } as const;
+  }
+
   try {
     const storageRef = ref(storage, filePath);
     await deleteObject(storageRef);

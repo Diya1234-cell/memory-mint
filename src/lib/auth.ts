@@ -1,12 +1,13 @@
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirebaseApp } from "@/lib/firebase";
 
-const auth = getAuth(getFirebaseApp());
+const firebaseApp = getFirebaseApp();
+const auth = firebaseApp ? getAuth(firebaseApp) : null;
 
-export function getFirebaseAuth(): Auth {
+export function getFirebaseAuth(): Auth | null {
   return auth;
 }
 
-export function authHelper(): Auth {
+export function authHelper(): Auth | null {
   return auth;
 }

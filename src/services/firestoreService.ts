@@ -1,4 +1,3 @@
-import { db } from "@/lib/firebase";
 import {
   doc,
   getDoc,
@@ -13,8 +12,17 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import type { Memory } from "@/types/models";
+import { db } from "@/lib/firebase";
+
+const FIREBASE_UNAVAILABLE_MESSAGE = "Firebase is not configured in this environment.";
+
+const unavailable = () => ({ success: false, error: new Error(FIREBASE_UNAVAILABLE_MESSAGE) } as const);
 
 export async function getSpace(spaceId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const snap = await getDoc(doc(db, "spaces", spaceId));
     if (!snap.exists()) {
@@ -28,6 +36,10 @@ export async function getSpace(spaceId: string) {
 }
 
 export async function getSpacesForUser(userId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const q = query(
       collection(db, "spaces"),
@@ -43,6 +55,10 @@ export async function getSpacesForUser(userId: string) {
 }
 
 export async function hasUserSpace(userId: string): Promise<boolean> {
+  if (!db) {
+    return false;
+  }
+
   try {
     const result = await getSpacesForUser(userId);
     if (result.success) {
@@ -55,6 +71,10 @@ export async function hasUserSpace(userId: string): Promise<boolean> {
 }
 
 export async function joinSpace(spaceId: string, userId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     await updateDoc(doc(db, "spaces", spaceId), {
       members: arrayUnion(userId),
@@ -69,6 +89,10 @@ export async function joinSpace(spaceId: string, userId: string) {
 export async function addMemory(
   memory: Omit<Memory, "id" | "createdAt">
 ) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const docRef = await addDoc(collection(db, "memories"), {
       ...memory,
@@ -82,6 +106,10 @@ export async function addMemory(
 }
 
 export async function getMemories(spaceId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const q = query(
       collection(db, "memories"),
@@ -106,6 +134,10 @@ export async function getMemories(spaceId: string) {
 }
 
 export async function getStoryBookChapters(spaceId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const q = query(
       collection(db, "spaces", spaceId, "storybook"),
@@ -125,6 +157,10 @@ export async function saveStoryBookChapter(
   chapterId: string | null,
   data: Record<string, unknown>
 ) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     if (chapterId) {
       await setDoc(doc(db, "spaces", spaceId, "storybook", chapterId), data, { merge: true });
@@ -139,6 +175,10 @@ export async function saveStoryBookChapter(
 }
 
 export async function deleteStoryBookChapter(spaceId: string, chapterId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     await setDoc(doc(db, "spaces", spaceId, "storybook", chapterId), { __deleted: true }, { merge: true });
     return { success: true } as const;
@@ -153,6 +193,10 @@ export async function createInvite(
   inviterId: string,
   inviteeEmail: string
 ) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const inviteToken = crypto.randomUUID();
     const docRef = await addDoc(collection(db, "invites"), {
@@ -171,6 +215,10 @@ export async function createInvite(
 }
 
 export async function getInviteByToken(token: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const q = query(collection(db, "invites"), where("inviteToken", "==", token));
     const snap = await getDocs(q);
@@ -184,6 +232,10 @@ export async function getInviteByToken(token: string) {
 }
 
 export async function acceptInvite(inviteId: string, userId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     await updateDoc(doc(db, "invites", inviteId), {
       status: "accepted",
@@ -198,6 +250,10 @@ export async function acceptInvite(inviteId: string, userId: string) {
 }
 
 export async function getLetterState(spaceId: string, userId: string) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     const snap = await getDoc(doc(db, "spaces", spaceId, "letterStates", userId));
     return { success: true, data: snap.exists() ? snap.data() : null } as const;
@@ -208,6 +264,10 @@ export async function getLetterState(spaceId: string, userId: string) {
 }
 
 export async function saveLetterState(spaceId: string, userId: string, state: Record<string, unknown>) {
+  if (!db) {
+    return unavailable();
+  }
+
   try {
     await setDoc(doc(db, "spaces", spaceId, "letterStates", userId), {
       ...state,

@@ -1,12 +1,21 @@
 import { addDoc, collection, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
+const FIREBASE_UNAVAILABLE_MESSAGE = 'Firebase is not configured in this environment.'
+
 export const createSpace = async (
   spaceName: string,
   userId: string,
   relationshipType: string,
   details: Record<string, unknown> = {}
 ) => {
+  if (!db) {
+    return {
+      success: false,
+      error: { message: FIREBASE_UNAVAILABLE_MESSAGE },
+    }
+  }
+
   try {
     const docRef = await addDoc(collection(db, 'spaces'), {
       spaceName,
