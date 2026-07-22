@@ -24,9 +24,10 @@ function lcg(seed: number) {
 export default function HomePage() {
   const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
 
   const handleStartJourney = async () => {
+    if (loading) return
     setIsTransitioning(true)
     if (!user) {
       setTimeout(() => {

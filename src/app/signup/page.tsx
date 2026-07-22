@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
+import { hasUserSpace } from '@/services/firestoreService'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -18,7 +19,9 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard')
+      hasUserSpace(user.uid).then((exists) => {
+        router.replace(exists ? '/dashboard' : '/create-space')
+      })
     }
   }, [loading, user, router])
 
@@ -26,11 +29,9 @@ export default function SignupPage() {
     event.preventDefault()
     setError('')
     const result = await signup(email.trim(), password, confirmPassword, name.trim())
-    if (result.success) {
-      router.push('/dashboard')
-      return
+    if (!result.success) {
+      setError(result.message ?? 'Unable to create account.')
     }
-    setError(result.message ?? 'Unable to create account.')
   }
 
   return (
