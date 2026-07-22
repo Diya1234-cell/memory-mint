@@ -1,7 +1,6 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { 
   Heart, 
   Menu, 
@@ -13,7 +12,7 @@ import {
   SkipForward,
   Volume2
 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 import { useSpaceData } from '@/hooks/useSpaceData'
@@ -44,6 +43,11 @@ export default function Sidebar() {
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault()
     router.push('/')
+  }
+
+  const handleNavigate = (href: string) => {
+    setIsOpen(false)
+    router.push(href)
   }
 
   // Adjust parent layout padding when collapsed status changes
@@ -216,11 +220,11 @@ export default function Sidebar() {
           {/* NAVIGATION LINKS */}
           <nav className="flex-1 space-y-1.5 overflow-y-auto pr-1">
             {items.map((item) => (
-              <Link
+              <button
                 key={item.label}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center rounded-xl transition-all duration-300 group relative ${
+                type="button"
+                onClick={() => handleNavigate(item.href)}
+                className={`flex w-full items-center text-left rounded-xl transition-all duration-300 group relative ${
                   isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5 gap-3'
                 } ${
                   isActive(item.href)
@@ -242,7 +246,7 @@ export default function Sidebar() {
                     {item.label}
                   </div>
                 )}
-              </Link>
+              </button>
             ))}
           </nav>
         </div>
