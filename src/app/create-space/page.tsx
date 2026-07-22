@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '@/services/storageService'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeSVG } from '@/components/ui/QRCode'
 import { 
   Heart, 
   Sparkles, 

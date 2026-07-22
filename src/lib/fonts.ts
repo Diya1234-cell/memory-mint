@@ -1,4 +1,4 @@
-import { Inter, Plus_Jakarta_Sans, Playfair_Display, Space_Grotesk } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, Playfair_Display, Space_Grotesk, Geist } from "next/font/google";
 
 export const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +27,7 @@ export const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-export const geist = Inter({
+export const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
   display: "swap",

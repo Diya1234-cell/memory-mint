@@ -1,5 +1,3 @@
-'use client'
-
 export type Mood = 'Romantic ❤️' | 'Happy 😊' | 'Grateful 🙏' | 'Excited ✨' | 'Nostalgic 🌙' | 'Hopeful 🌸' | 'Emotional 🥹' | 'Calm ☁️'
 
 export interface Letter {

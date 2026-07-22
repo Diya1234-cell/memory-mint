@@ -12,14 +12,8 @@ export interface DailyQuest {
   duration: string;
 }
 
-/**
- * Utility to check if a Gemini API key is available.
- */
 function getApiKey(): string | null {
-  if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-    return process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  }
-  return null;
+  return process.env.NEXT_PUBLIC_GEMINI_API_KEY || null;
 }
 
 /**
@@ -153,7 +147,7 @@ export async function generateQuest(spaceData: any): Promise<DailyQuest> {
           duration: parsed.duration || '5 mins',
         };
       }
-    } catch (e) {
+    } catch {
       console.warn('Failed parsing Gemini quest JSON. Falling back to local quests.');
     }
   }

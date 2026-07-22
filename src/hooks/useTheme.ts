@@ -1,3 +1,3 @@
 export function useTheme() {
-  return null;
+  return { theme: "dark", resolvedTheme: "dark" };
 }

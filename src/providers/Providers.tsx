@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { StoryBookProvider } from '@/context/StoryBookContext'
 import { AuthProvider } from '@/providers/AuthProvider'
 

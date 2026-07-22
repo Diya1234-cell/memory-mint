@@ -1,6 +1,6 @@
  'use client'
 
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Heart,
@@ -8,21 +8,13 @@ import {
   FileText,
   TrendingUp,
   TrendingDown,
-  Users,
   MessageCircle,
-  Smile,
-  Star,
-  Calendar,
-  Clock,
-  Activity,
   Target,
-  Award,
   Zap,
   ShieldCheck,
 } from 'lucide-react'
 
 import { useSpaceData } from '@/hooks/useSpaceData'
-import Button from '@/components/ui/Button'
 
 type Metric = { id: string; label: string; score: number; trend: number; spark: number[] }
 

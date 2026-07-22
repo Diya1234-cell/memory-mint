@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, BookOpen, CalendarDays, Camera, ChevronDown, Flame, Grid2X2, Heart, MapPin, Mic, Music2, Plus, Search, Sparkles, Star, Users, Video } from 'lucide-react'
+import { Bell, BookOpen, CalendarDays, Camera, ChevronDown, Flame, Grid2X2, Heart, MapPin, Mic, Plus, Search, Sparkles, Star, Users, Video } from 'lucide-react'
 
 type Memory = { id: number; title: string; month: string; date: string; location: string; mood: string; color: string; image: string; x: number; y: number; category: string }
 

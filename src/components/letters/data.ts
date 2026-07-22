@@ -1,5 +1,3 @@
-'use client'
-
 import { Letter, COLLECTIONS, TIMELINE_MILESTONES, AI_TEMPLATES, Mood } from './types'
 
 const SAMPLE_BODIES: Record<string, string[]> = {

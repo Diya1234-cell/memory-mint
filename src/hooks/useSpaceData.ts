@@ -34,13 +34,13 @@ function mapFirestoreSpace(doc: any): Partial<SpaceData> {
   return {
     spaceId: doc.id,
     spaceName: d.spaceName || DEFAULT_SPACE_DATA.spaceName,
-    themeColor: d.themeColor || d.themeColor || DEFAULT_SPACE_DATA.themeColor,
+    themeColor: d.themeColor || DEFAULT_SPACE_DATA.themeColor,
     specialDate: d.specialDate || DEFAULT_SPACE_DATA.specialDate,
     relationshipEmoji: d.relationshipEmoji || DEFAULT_SPACE_DATA.relationshipEmoji,
     description: d.description || DEFAULT_SPACE_DATA.description,
     category: d.category || DEFAULT_SPACE_DATA.category,
     isPrivate: d.isPrivate ?? DEFAULT_SPACE_DATA.isPrivate,
-    coverPhoto: d.coverPhoto || d.coverPhoto || DEFAULT_SPACE_DATA.coverPhoto,
+    coverPhoto: d.coverPhoto || DEFAULT_SPACE_DATA.coverPhoto,
     selectedRelation: d.relationshipType || d.selectedRelation || DEFAULT_SPACE_DATA.selectedRelation,
     invites: d.invites || [],
   }

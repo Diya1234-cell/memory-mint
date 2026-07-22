@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { Heart, Sparkles, ArrowRight, CheckCircle2, Clock, Star } from 'lucide-react'
+import { Heart, Sparkles, ArrowRight } from 'lucide-react'
 
 import Navbar from '@/features/landing/components/Navbar'
 import HeroSection from '@/features/landing/components/HeroSection'
@@ -291,7 +291,6 @@ function GalaxyCard({ delay, inView }: { delay: number; inView: boolean }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
   const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
   const rotateX = useTransform(springY, (v: number) => -v * 0.02)
   const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
@@ -432,7 +431,6 @@ function StoryCard({ delay, inView }: { delay: number; inView: boolean }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
   const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
   const rotateX = useTransform(springY, (v: number) => -v * 0.02)
   const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
@@ -560,7 +558,6 @@ function TimeCard({ delay, inView }: { delay: number; inView: boolean }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
   const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
   const rotateX = useTransform(springY, (v: number) => -v * 0.02)
   const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
@@ -697,7 +694,6 @@ function PulseCard({ delay, inView }: { delay: number; inView: boolean }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
   const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
   const rotateX = useTransform(springY, (v: number) => -v * 0.02)
   const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.02), { stiffness: 150, damping: 20 })
@@ -955,7 +951,6 @@ function TimelineStep({ step, index, scrollProgress }: { step: { num: string; ti
   const [hovered, setHovered] = useState(false)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 20 })
   const springY = useSpring(mouseY, { stiffness: 150, damping: 20 })
   const rotateX = useTransform(springY, (v: number) => -v * 0.015)
   const rotateY = useSpring(useTransform(mouseX, (v: number) => v * 0.015), { stiffness: 150, damping: 20 })

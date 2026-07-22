@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpaceData } from '@/hooks/useSpaceData'
-import { getSpacesForUser, getMemories, getSpace } from '@/services/firestoreService'
+import { getMemories, getSpace } from '@/services/firestoreService'
 
 export interface DashboardStats {
   memoryCount: number
