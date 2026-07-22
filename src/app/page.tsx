@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { Heart, Sparkles, ArrowRight, CheckCircle2, Clock, Star } from 'lucide-react'
 
@@ -20,12 +19,14 @@ function lcg(seed: number) {
 }
 
 export default function HomePage() {
-  const router = useRouter()
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const handleStartJourney = () => {
     setIsTransitioning(true)
-    setTimeout(() => router.push('/create-space'), 500)
+    setTimeout(() => {
+      setIsTransitioning(false)
+      window.dispatchEvent(new CustomEvent('open-auth'))
+    }, 500)
   }
 
   return (

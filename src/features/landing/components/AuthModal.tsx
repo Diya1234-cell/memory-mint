@@ -7,6 +7,7 @@ import {
   Mail, Lock, User, Eye, EyeOff, ChevronDown,
   Sparkles, Globe, Smartphone, X
 } from 'lucide-react'
+import { useAuth } from '@/providers/AuthProvider'
 
 type AuthMode = 'login' | 'signup'
 
@@ -27,15 +28,58 @@ const countries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Ge
 
 export default function AuthModal() {
   const router = useRouter()
+  const { user, login, signup } = useAuth()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<AuthMode>('login')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [agreed, setAgreed] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [signupName, setSignupName] = useState('')
+  const [signupEmail, setSignupEmail] = useState('')
+  const [signupPassword, setSignupPassword] = useState('')
+  const [signupConfirm, setSignupConfirm] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState(false)
 
-  const handleNavigateToCreate = () => {
+  const handleAuthSubmit = async () => {
+    setAuthError('')
+
+    if (user) {
+      setOpen(false)
+      router.push('/create-space')
+      return
+    }
+
+    setIsSubmitting(true)
+    const result = mode === 'login'
+      ? await login(loginEmail.trim(), loginPassword)
+      : await signup(
+          signupEmail.trim(),
+          signupPassword,
+          signupConfirm,
+          signupName.trim(),
+        )
+
+    if (!result.success) {
+      setAuthError(result.message ?? 'Unable to authenticate. Please try again.')
+      setIsSubmitting(false)
+      return
+    }
+
+    setPendingNavigation(true)
+  }
+
+  const handleSocialAuth = () => {
+    setAuthError('Please use your email and password to sign in.')
+  }
+
+  const handleClose = () => {
     setOpen(false)
-    router.push('/create-space')
+    setAuthError('')
+    setPendingNavigation(false)
   }
 
   useEffect(() => {
@@ -52,6 +96,15 @@ export default function AuthModal() {
     }
     return () => { document.body.style.overflow = '' }
   }, [open])
+
+  useEffect(() => {
+    if (!pendingNavigation || !user) return
+
+    setPendingNavigation(false)
+    setIsSubmitting(false)
+    setOpen(false)
+    router.push('/create-space')
+  }, [pendingNavigation, user, router])
 
   if (!open) return null
 
@@ -71,7 +124,7 @@ export default function AuthModal() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            onClick={() => setOpen(false)}
+            onClick={handleClose}
           />
 
           {/* Panel */}
@@ -85,7 +138,7 @@ export default function AuthModal() {
             <div className="auth-glass-card rounded-[32px] p-7 relative overflow-hidden">
               {/* Close */}
               <button
-                onClick={() => setOpen(false)}
+                onClick={handleClose}
                 className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-white/80 transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -107,7 +160,10 @@ export default function AuthModal() {
                 {(['login', 'signup'] as AuthMode[]).map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setMode(tab)}
+                    onClick={() => {
+                      setMode(tab)
+                      setAuthError('')
+                    }}
                     className={`relative z-10 flex-1 py-2.5 text-[13px] font-semibold rounded-[11px] transition-colors duration-300 ${
                       mode === tab ? 'text-white' : 'text-white/40 hover:text-white/60'
                     }`}
@@ -130,12 +186,24 @@ export default function AuthModal() {
 
                     <div className="relative mb-4">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
-                      <input type="email" placeholder="Email address" className="glass-input" />
+                      <input
+                        type="email"
+                        placeholder="Email address"
+                        value={loginEmail}
+                        onChange={(event) => setLoginEmail(event.target.value)}
+                        className="glass-input"
+                      />
                     </div>
 
                     <div className="relative mb-4">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
-                      <input type={showPassword ? 'text' : 'password'} placeholder="Password" className="glass-input pr-12" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Password"
+                        value={loginPassword}
+                        onChange={(event) => setLoginPassword(event.target.value)}
+                        className="glass-input pr-12"
+                      />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -149,7 +217,15 @@ export default function AuthModal() {
                       <a href="#" className="text-[12px] text-neonPink/70 hover:text-neonPink transition-colors font-medium">Forgot Password?</a>
                     </div>
 
-                    <button onClick={handleNavigateToCreate} className="btn-cosmic-primary w-full text-[14px] mb-4">Continue Journey</button>
+                    {authError ? <p className="text-sm text-rose-400 mb-4">{authError}</p> : null}
+
+                    <button
+                      onClick={handleAuthSubmit}
+                      disabled={isSubmitting}
+                      className="btn-cosmic-primary w-full text-[14px] mb-4 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? 'Signing in...' : 'Continue Journey'}
+                    </button>
 
                     <div className="flex items-center gap-4 mb-4">
                       <div className="flex-1 h-[1px] bg-white/[0.06]" />
@@ -157,10 +233,10 @@ export default function AuthModal() {
                       <div className="flex-1 h-[1px] bg-white/[0.06]" />
                     </div>
 
-                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
+                    <button onClick={handleSocialAuth} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
                       <Globe className="w-4 h-4" /> Continue with Google
                     </button>
-                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
+                    <button onClick={handleSocialAuth} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
                       <Smartphone className="w-4 h-4" /> Continue with Apple
                     </button>
                   </motion.div>
@@ -176,22 +252,46 @@ export default function AuthModal() {
 
                     <div className="relative mb-3">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
-                      <input type="text" placeholder="Full Name" className="glass-input" />
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={signupName}
+                        onChange={(event) => setSignupName(event.target.value)}
+                        className="glass-input"
+                      />
                     </div>
                     <div className="relative mb-3">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
-                      <input type="email" placeholder="Email address" className="glass-input" />
+                      <input
+                        type="email"
+                        placeholder="Email address"
+                        value={signupEmail}
+                        onChange={(event) => setSignupEmail(event.target.value)}
+                        className="glass-input"
+                      />
                     </div>
                     <div className="relative mb-2">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
-                      <input type={showPassword ? 'text' : 'password'} placeholder="Password" className="glass-input pr-12" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Password"
+                        value={signupPassword}
+                        onChange={(event) => setSignupPassword(event.target.value)}
+                        className="glass-input pr-12"
+                      />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                     <div className="relative mb-3">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none" />
-                      <input type={showConfirm ? 'text' : 'password'} placeholder="Confirm Password" className="glass-input pr-12" />
+                      <input
+                        type={showConfirm ? 'text' : 'password'}
+                        placeholder="Confirm Password"
+                        value={signupConfirm}
+                        onChange={(event) => setSignupConfirm(event.target.value)}
+                        className="glass-input pr-12"
+                      />
                       <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
                         {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -221,8 +321,15 @@ export default function AuthModal() {
                       </span>
                     </label>
 
-                    <button onClick={handleNavigateToCreate} className="btn-cosmic-primary w-full text-[14px] mb-4 flex items-center justify-center gap-2">
-                      <Sparkles className="w-4 h-4" /> Create My Universe
+                    {authError ? <p className="text-sm text-rose-400 mb-4">{authError}</p> : null}
+
+                    <button
+                      onClick={handleAuthSubmit}
+                      disabled={isSubmitting}
+                      className="btn-cosmic-primary w-full text-[14px] mb-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {isSubmitting ? 'Creating account...' : 'Create My Universe'}
                     </button>
 
                     <div className="flex items-center gap-4 mb-4">
@@ -231,10 +338,10 @@ export default function AuthModal() {
                       <div className="flex-1 h-[1px] bg-white/[0.06]" />
                     </div>
 
-                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
+                    <button onClick={handleSocialAuth} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px] mb-3">
                       <Globe className="w-4 h-4" /> Continue with Google
                     </button>
-                    <button onClick={handleNavigateToCreate} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
+                    <button onClick={handleSocialAuth} className="btn-glass w-full flex items-center justify-center gap-3 text-[13px]">
                       <Smartphone className="w-4 h-4" /> Continue with Apple
                     </button>
                   </motion.div>

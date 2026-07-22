@@ -12,13 +12,13 @@ export const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
 };
 
+// Authentication only needs the core web app settings. Requiring Storage and
+// Messaging values here prevented login/signup from ever initializing in apps
+// that do not use those Firebase products.
 const hasFirebaseConfig = [
   firebaseConfig.apiKey,
   firebaseConfig.authDomain,
   firebaseConfig.projectId,
-  firebaseConfig.storageBucket,
-  firebaseConfig.messagingSenderId,
-  firebaseConfig.appId,
 ].every((value) => typeof value === "string" && value.trim().length > 0);
 
 let app: FirebaseApp | null = null;

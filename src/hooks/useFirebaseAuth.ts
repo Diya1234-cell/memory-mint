@@ -18,19 +18,33 @@ export function useFirebaseAuth() {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const firebaseAuth = auth;
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser) => {
+      // Firebase can deliver the initial null snapshot while a sign-in is
+      // completing. Prefer the current session in that case so it cannot
+      // overwrite a successful login with a logged-out state.
+      setUser(firebaseUser ?? firebaseAuth.currentUser);
       setLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  const login = (email: string, password: string) =>
-    loginWithEmail(email, password);
+  const login = async (email: string, password: string) => {
+    const result = await loginWithEmail(email, password);
+    if (result.user) {
+      setUser(result.user);
+    }
+    return result;
+  };
 
-  const signup = (email: string, password: string) =>
-    signupWithEmail(email, password);
+  const signup = async (email: string, password: string, name?: string) => {
+    const result = await signupWithEmail(email, password, name);
+    if (result.user) {
+      setUser(result.user);
+    }
+    return result;
+  };
 
   const logout = () => authLogout();
 

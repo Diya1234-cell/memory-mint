@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const result = await fbSignup(email, password)
+    const result = await fbSignup(email, password, name)
 
     if (result.error) {
       return {

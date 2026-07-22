@@ -23,11 +23,8 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createSpace } from '@/services/spaceServices'
-<<<<<<< HEAD
 import { useAuth } from '@/providers/AuthProvider'
-=======
 import { createInvite } from '@/services/firestoreService'
->>>>>>> 320e781156e4fcc2215e652b648a58467f95f3f5
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49267
