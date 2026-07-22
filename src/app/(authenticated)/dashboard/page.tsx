@@ -687,6 +687,11 @@ export default function DashboardPage() {
                             alt={mem.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
+                          {mem.id.startsWith('sample-') && (
+                            <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-white/80 backdrop-blur-sm">
+                              Sample
+                            </span>
+                          )}
                         </div>
 
                         <div className="relative z-10">

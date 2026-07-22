@@ -182,6 +182,7 @@ function createChapterFromDraft(draft: {
   tags: string[]
   visibility: 'Private' | 'Shared' | 'Public'
   favorite: boolean
+  mediaUrl?: string | null
 }, chapterIndex: number): StoryBookChapter {
   const moodLabel = draft.mood !== null ? MOOD_LABELS[draft.mood % MOOD_LABELS.length] : 'Magical'
   const moodEmoji = draft.mood !== null ? MOOD_EMOJIS[draft.mood % MOOD_EMOJIS.length] : '✨'
@@ -197,13 +198,16 @@ function createChapterFromDraft(draft: {
     ? new Date(draft.date + 'T12:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
     : new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
 
-  const images = SAMPLE_IMAGES.slice(chapterIndex * 3 % SAMPLE_IMAGES.length, chapterIndex * 3 % SAMPLE_IMAGES.length + 3)
+  const fallbackImages = SAMPLE_IMAGES.slice(chapterIndex * 3 % SAMPLE_IMAGES.length, chapterIndex * 3 % SAMPLE_IMAGES.length + 3)
     .map((src, i) => ({
       src,
       rot: -5 + (i * 3) + (chapterIndex % 3),
       w: 110 + (i * 10),
       h: 140 - (i * 5),
     }))
+  const images = draft.memoryType === 'photos' && draft.mediaUrl
+    ? [{ src: draft.mediaUrl, rot: 0, w: 150, h: 185 }]
+    : fallbackImages
 
   const story = generateStory(title, moodLabel, draft.category, place, displayDate)
   const caption = generateCaption(title, moodLabel)

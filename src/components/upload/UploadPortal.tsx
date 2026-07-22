@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, Sparkles, Check, Image, Film, Music, FileText } from 'lucide-react'
 import { useMemory } from '@/context/MemoryContext'
+import { useStoryBook } from '@/context/StoryBookContext'
 import { useSpaceData } from '@/hooks/useSpaceData'
 import { useAuth } from '@/providers/AuthProvider'
 import { uploadImage } from '@/services/storageService'
@@ -31,6 +32,7 @@ const orbitRings = [
 
 export default function UploadPortal() {
   const { draft, setField, triggerSaveMemory } = useMemory()
+  const { addChapter } = useStoryBook()
   const { spaceData } = useSpaceData()
   const { user } = useAuth()
   const [isHovered, setIsHovered] = useState(false)
@@ -136,6 +138,7 @@ export default function UploadPortal() {
     setSelectedFile(file)
     setField('uploadedFileName', file.name)
     setField('mediaUrl', null)
+    setField('storybookChapterId', null)
     // Generate preview URL for images
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file)
@@ -149,9 +152,26 @@ export default function UploadPortal() {
       const result = await uploadImage(file, spaceData.spaceId)
       if (result.success) {
         setField('mediaUrl', result.url)
+        const chapter = addChapter({
+          title: draft.title || file.name.replace(/\.[^.]+$/, ''),
+          description: draft.description,
+          memoryType: 'photos',
+          uploadedFileName: file.name,
+          mediaUrl: result.url,
+          date: draft.date,
+          location: draft.location,
+          mood: draft.mood,
+          weather: draft.weather,
+          people: draft.people,
+          category: draft.category,
+          tags: draft.tags,
+          visibility: draft.visibility,
+          favorite: draft.favorite,
+        })
+        setField('storybookChapterId', chapter.id)
       }
     }
-  }, [draft.selectedMemoryType, simulateUpload, setField, spaceData.spaceId, user])
+  }, [addChapter, draft, simulateUpload, setField, spaceData.spaceId, user])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -184,6 +204,7 @@ export default function UploadPortal() {
     setPreviewUrl(null)
     setField('uploadedFileName', null)
     setField('mediaUrl', null)
+    setField('storybookChapterId', null)
     cleanupInterval()
   }, [cleanupInterval, setField])
 

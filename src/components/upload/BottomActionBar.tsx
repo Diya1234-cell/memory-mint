@@ -19,7 +19,7 @@ interface Toast {
 
 export default function BottomActionBar() {
   const { draft, saveDraft, resetDraft, triggerSaveMemory, draftSaved } = useMemory()
-  const { addChapter } = useStoryBook()
+  const { addChapter, updateChapterMeta } = useStoryBook()
   const { spaceData } = useSpaceData()
   const { user } = useFirebaseAuth()
   const [showDiscard, setShowDiscard] = useState(false)
@@ -122,25 +122,38 @@ export default function BottomActionBar() {
       return
     }
 
-    addChapter({
-      title: draft.title,
-      description: draft.description,
-      memoryType: draft.selectedMemoryType,
-      uploadedFileName: draft.uploadedFileName,
-      date: draft.date,
-      location: draft.location,
-      mood: draft.mood,
-      weather: draft.weather,
-      people: draft.people,
-      category: draft.category,
-      tags: draft.tags,
-      visibility: draft.visibility,
-      favorite: draft.favorite,
-    })
+    const isImage = draft.selectedMemoryType === 'photos'
+    if (isImage && draft.storybookChapterId) {
+      updateChapterMeta(draft.storybookChapterId, {
+        title: draft.title || draft.uploadedFileName.replace(/\.[^.]+$/, ''),
+        date: draft.date,
+        place: draft.location || 'Somewhere Beautiful',
+        favorite: draft.favorite,
+        tags: draft.tags,
+        images: mediaUrl ? [{ src: mediaUrl, rot: 0, w: 150, h: 185 }] : undefined,
+      })
+    } else {
+      addChapter({
+        title: draft.title,
+        description: draft.description,
+        memoryType: draft.selectedMemoryType,
+        uploadedFileName: draft.uploadedFileName,
+        mediaUrl,
+        date: draft.date,
+        location: draft.location,
+        mood: draft.mood,
+        weather: draft.weather,
+        people: draft.people,
+        category: draft.category,
+        tags: draft.tags,
+        visibility: draft.visibility,
+        favorite: draft.favorite,
+      })
+    }
 
     triggerSaveMemory()
     showToast('Memory Saved to StoryBook ✨', '📖')
-  }, [draft, addChapter, triggerSaveMemory, showToast, spaceData.spaceId, user])
+  }, [draft, addChapter, updateChapterMeta, triggerSaveMemory, showToast, spaceData.spaceId, user])
 
   return (
     <>
