@@ -62,25 +62,30 @@ export default function BottomActionBar() {
       return
     }
 
-    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')
-    const file = fileInput?.files?.[0]
-    if (!file) {
-      showToast('File not found. Please re-upload.', '⚠️')
-      return
-    }
+    let mediaUrl = draft.mediaUrl
 
-    const isImage = file.type.startsWith('image/')
-    const isVideo = file.type.startsWith('video/')
+    if (!mediaUrl) {
+      const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')
+      const file = fileInput?.files?.[0]
+      if (!file) {
+        showToast('File not found. Please re-upload.', '⚠️')
+        return
+      }
 
-    const uploadResult = isImage
-      ? await uploadImage(file, user.uid)
-      : isVideo
-      ? await uploadVideo(file, user.uid)
-      : null
+      const isImage = file.type.startsWith('image/')
+      const isVideo = file.type.startsWith('video/')
 
-    if (!uploadResult?.success) {
-      showToast('Failed to upload file. Please try again.', '❌')
-      return
+      const uploadResult = isImage
+        ? await uploadImage(file, spaceData.spaceId)
+        : isVideo
+        ? await uploadVideo(file, spaceData.spaceId)
+        : null
+
+      if (!uploadResult?.success) {
+        showToast('Failed to upload file. Please try again.', '❌')
+        return
+      }
+      mediaUrl = uploadResult.url
     }
 
     const memoryTypeMap: Record<string, MemoryType> = {
@@ -96,7 +101,7 @@ export default function BottomActionBar() {
       title: draft.title || 'Untitled Memory',
       description: draft.description || undefined,
       type: memoryTypeMap[draft.selectedMemoryType] ?? MemoryType.NOTE,
-      mediaUrl: uploadResult.url,
+      mediaUrl,
       updatedAt: undefined,
       metadata: {
         fileName: draft.uploadedFileName,

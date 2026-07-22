@@ -30,19 +30,20 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
   if (!apiKey) return null;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: `${systemPrompt}\n\nUser request: ${userPrompt}` }
-            ]
+            parts: [{ text: userPrompt }]
           }
         ],
         generationConfig: {
@@ -53,7 +54,13 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<str
     });
 
     if (!response.ok) {
-      console.warn('Gemini API request failed:', response.statusText);
+      const errorBody = await response.text();
+      let errorDetail = response.statusText;
+      try {
+        const parsed = JSON.parse(errorBody);
+        if (parsed.error?.message) errorDetail = parsed.error.message;
+      } catch {}
+      console.warn('Gemini API request failed:', response.status, errorDetail);
       return null;
     }
 

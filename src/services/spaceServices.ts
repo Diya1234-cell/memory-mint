@@ -23,11 +23,12 @@ export const createSpace = async (
       id: docRef.id,
     }
   } catch (error) {
-    console.error(error)
+    const message = error instanceof Error ? error.message : 'Failed to create space.'
+    console.error(message)
 
     return {
       success: false,
-      error,
+      error: { message },
     }
   }
 }
