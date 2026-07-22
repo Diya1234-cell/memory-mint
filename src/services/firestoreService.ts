@@ -42,6 +42,18 @@ export async function getSpacesForUser(userId: string) {
   }
 }
 
+export async function hasUserSpace(userId: string): Promise<boolean> {
+  try {
+    const result = await getSpacesForUser(userId);
+    if (result.success) {
+      return result.data.length > 0;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function joinSpace(spaceId: string, userId: string) {
   try {
     await updateDoc(doc(db, "spaces", spaceId), {
@@ -87,6 +99,98 @@ export async function getMemories(spaceId: string) {
       } as Memory;
     });
     return { success: true, data: memories } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function getStoryBookChapters(spaceId: string) {
+  try {
+    const q = query(
+      collection(db, "spaces", spaceId, "storybook"),
+      where("__deleted", "!=", true)
+    );
+    const snap = await getDocs(q);
+    const chapters = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return { success: true, data: chapters } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function saveStoryBookChapter(
+  spaceId: string,
+  chapterId: string | null,
+  data: Record<string, unknown>
+) {
+  try {
+    if (chapterId) {
+      await setDoc(doc(db, "spaces", spaceId, "storybook", chapterId), data, { merge: true });
+      return { success: true, id: chapterId } as const;
+    }
+    const docRef = await addDoc(collection(db, "spaces", spaceId, "storybook"), data);
+    return { success: true, id: docRef.id } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function deleteStoryBookChapter(spaceId: string, chapterId: string) {
+  try {
+    await setDoc(doc(db, "spaces", spaceId, "storybook", chapterId), { __deleted: true }, { merge: true });
+    return { success: true } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function createInvite(
+  spaceId: string,
+  inviterId: string,
+  inviteeEmail: string
+) {
+  try {
+    const inviteToken = crypto.randomUUID();
+    const docRef = await addDoc(collection(db, "invites"), {
+      spaceId,
+      inviterId,
+      inviteeEmail,
+      status: "pending",
+      inviteToken,
+      createdAt: Timestamp.now(),
+    });
+    return { success: true, id: docRef.id, inviteToken } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function getInviteByToken(token: string) {
+  try {
+    const q = query(collection(db, "invites"), where("inviteToken", "==", token));
+    const snap = await getDocs(q);
+    if (snap.empty) return { success: false, error: "Invite not found" } as const;
+    const doc = snap.docs[0];
+    return { success: true, data: { id: doc.id, ...doc.data() } } as const;
+  } catch (error) {
+    console.error(error);
+    return { success: false, error } as const;
+  }
+}
+
+export async function acceptInvite(inviteId: string, userId: string) {
+  try {
+    await updateDoc(doc(db, "invites", inviteId), {
+      status: "accepted",
+      acceptedBy: userId,
+      acceptedAt: Timestamp.now(),
+    });
+    return { success: true } as const;
   } catch (error) {
     console.error(error);
     return { success: false, error } as const;

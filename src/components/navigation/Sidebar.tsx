@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 import { useSpaceData } from '@/hooks/useSpaceData'
+import { useAuth } from '@/providers/AuthProvider'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -24,6 +25,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isPlaying, setIsPlaying] = useState(true)
   const { spaceData } = useSpaceData()
+  const { logout } = useAuth()
   const themeColor = spaceData.themeColor || 'pink'
   const isStoryBook = pathname === '/storybook'
 
@@ -40,9 +42,10 @@ export default function Sidebar() {
 
   const isActive = (href: string) => pathname === href
 
-  const handleLogout = (e: React.MouseEvent) => {
+  const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault()
-    router.push('/')
+    await logout()
+    router.push('/login')
   }
 
   const handleNavigate = (href: string) => {

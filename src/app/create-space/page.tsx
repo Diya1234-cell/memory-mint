@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '@/services/storageService'
 import { QRCodeSVG } from 'qrcode.react'
-import { useAuth } from '@/providers/AuthProvider'
-import { createSpace } from '@/services/spaceServices'
 import { 
   Heart, 
   Sparkles, 
@@ -24,6 +22,8 @@ import {
   Copy
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFirebaseAuth } from '@/hooks/useFirebaseAuth'
+import { createSpace } from '@/services/spaceServices'
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49267
@@ -35,8 +35,6 @@ const fontLink = "https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&d
 
 export default function CreateSpacePage() {
   const router = useRouter()
-  const { user } = useAuth()
-
   // Onboarding Wizard States
   const [step, setStep] = useState(1) // 1, 2, 3, or 4
   const [direction, setDirection] = useState(1) // for transition direction
@@ -66,10 +64,13 @@ export default function CreateSpacePage() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 })
   
+  const { user } = useFirebaseAuth()
+
   // Step 4 Success States
   const [isCtaHovered, setIsCtaHovered] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [createError, setCreateError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const objectUrlRef = useRef<string | null>(null)
   const uploadVersionRef = useRef(0)
@@ -161,9 +162,25 @@ export default function CreateSpacePage() {
 
   const handleFinalEnter = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setIsEnding(true)
-    
-    // Save details to localStorage
+    if (!user) {
+      setCreateError('You must be logged in to create a space.')
+      return
+    }
+    if (!selectedRelation) {
+      setCreateError('Please select a relationship type.')
+      return
+    }
+    setCreateError('')
+    setIsLoading(true)
+
+    const result = await createSpace(spaceName, user.uid, selectedRelation)
+
+    if (!result.success) {
+      setCreateError(result.error?.message ?? 'Failed to create space.')
+      setIsLoading(false)
+      return
+    }
+
     const setupData = {
       spaceName,
       themeColor,
@@ -174,17 +191,12 @@ export default function CreateSpacePage() {
       isPrivate,
       coverPhoto,
       selectedRelation,
-      invites
+      invites,
+      spaceId: result.id,
     }
-    let persistedSetupData: typeof setupData & { spaceId?: string } = setupData
-    if (user) {
-      const result = await createSpace(spaceName, user.uid, selectedRelation ?? 'couple', setupData)
-      if (result.success) {
-        persistedSetupData = { ...setupData, spaceId: result.id }
-      }
-    }
-    localStorage.setItem('memory-universe-setup', JSON.stringify(persistedSetupData))
+    localStorage.setItem('memory-universe-setup', JSON.stringify(setupData))
 
+    setIsEnding(true)
     setTimeout(() => {
       router.push('/dashboard')
     }, 1000)
@@ -1307,12 +1319,14 @@ export default function CreateSpacePage() {
                       </p>
                     </div>
 
+                    {createError ? <p className="text-sm text-rose-400 text-center">{createError}</p> : null}
+
                     {/* Large CTA with emitter hover particles */}
                     <button
                       onMouseEnter={() => setIsCtaHovered(true)}
                       onMouseLeave={() => setIsCtaHovered(false)}
                       onClick={handleFinalEnter}
-                      disabled={isEnding}
+                      disabled={isEnding || isLoading}
                       className="relative px-8 py-4.5 bg-gradient-to-r from-neonPink to-neonPurple text-white font-extrabold rounded-2xl shadow-glow-pink hover:scale-105 active:scale-95 hover:shadow-[0_0_35px_rgba(255,75,145,0.7)] active:shadow-glow-pink transition-all duration-300 flex items-center gap-3 w-full sm:w-auto text-center justify-center cursor-pointer text-sm z-10"
                     >
                       <span>Enter Memory Universe</span>
