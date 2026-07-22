@@ -27,8 +27,9 @@ export default function HomePage() {
   const { user, loading } = useAuth()
 
   const handleStartJourney = async () => {
+    if (loading) return
     setIsTransitioning(true)
-    if (loading || !user) {
+    if (!user) {
       setTimeout(() => router.push('/login'), 500)
       return
     }

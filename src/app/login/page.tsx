@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
+import { hasUserSpace } from '@/services/firestoreService'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -15,7 +16,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard')
+      hasUserSpace(user.uid).then((exists) => {
+        router.replace(exists ? '/dashboard' : '/create-space')
+      })
     }
   }, [loading, user, router])
 
@@ -23,11 +26,9 @@ export default function LoginPage() {
     event.preventDefault()
     setError('')
     const result = await login(email.trim(), password)
-    if (result.success) {
-      router.push('/dashboard')
-      return
+    if (!result.success) {
+      setError(result.message ?? 'Unable to sign in.')
     }
-    setError(result.message ?? 'Unable to sign in.')
   }
 
   return (

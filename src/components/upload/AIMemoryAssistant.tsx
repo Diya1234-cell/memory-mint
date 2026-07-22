@@ -2,6 +2,14 @@
 
 import { useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useMemory } from '@/context/MemoryContext'
+import {
+  generateMemoryCaption,
+  generateStoryFromChapters,
+  generateMemorySummary,
+  generateMoodInsight,
+  generateTags,
+} from '@/lib/ai-engine'
 
 const actions = [
   { icon: '✨', label: 'Generate Caption' },
@@ -21,8 +29,14 @@ const lcg = (seed: number) => {
 }
 
 export default function AIMemoryAssistant() {
+  const { draft } = useMemory()
+
   const [modalOpen, setModalOpen] = useState(false)
   const [activeAction, setActiveAction] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [inputText, setInputText] = useState('')
+  const [showInput, setShowInput] = useState(true)
   const cardRef = useRef<HTMLDivElement>(null)
   const mouseRef = useRef({ x: 0.5, y: 0.5 })
 
@@ -58,10 +72,127 @@ export default function AIMemoryAssistant() {
     }
   }, [])
 
+  const needsUserInput = (label: string) =>
+    label === 'Generate Story' || label === 'Summarize Voice Note'
+
+  const defaultInputForAction = useCallback((label: string): string => {
+    switch (label) {
+      case 'Generate Caption':
+        return `Title: ${draft.title || 'Untitled'}\nDescription: ${draft.description || ''}\nLocation: ${draft.location || ''}`
+      case 'Describe this Memory':
+        return `Title: ${draft.title || 'Untitled'}\nDescription: ${draft.description || ''}\nLocation: ${draft.location || ''}`
+      case 'Suggest Tags':
+        return `Title: ${draft.title || 'Untitled'}\nDescription: ${draft.description || ''}\nLocation: ${draft.location || ''}`
+      case 'Detect Mood':
+        return `Title: ${draft.title || 'Untitled'}\nDescription: ${draft.description || ''}`
+      case 'Generate Story':
+        return ''
+      case 'Summarize Voice Note':
+        return ''
+      default:
+        return ''
+    }
+  }, [draft])
+
   const openModal = useCallback((label: string) => {
     setActiveAction(label)
+    setResult(null)
+    setIsLoading(false)
+    setInputText(defaultInputForAction(label))
+    setShowInput(true)
     setModalOpen(true)
+  }, [defaultInputForAction])
+
+  const handleGenerate = useCallback(async () => {
+    setIsLoading(true)
+    setResult(null)
+    setShowInput(false)
+
+    try {
+      let generated: string | string[] = ''
+
+      switch (activeAction) {
+        case 'Generate Caption': {
+          const title = draft.title || 'Untitled'
+          const desc = draft.description || inputText.split('\n').slice(1).join(' ').replace(/^(Description|Location):\s*/i, '').trim() || undefined
+          const loc = draft.location || undefined
+          generated = await generateMemoryCaption(title, desc, loc, draft.date || undefined, draft.people)
+          break
+        }
+        case 'Generate Story': {
+          const chapters = inputText
+            .split('\n')
+            .filter(Boolean)
+            .map(line => {
+              const colonIdx = line.indexOf(':')
+              if (colonIdx > 0 && colonIdx < 40) {
+                return { title: line.slice(0, colonIdx).trim(), description: line.slice(colonIdx + 1).trim() }
+              }
+              return { title: line.trim() }
+            })
+          generated = await generateStoryFromChapters(draft.title || 'My Memory', chapters)
+          break
+        }
+        case 'Describe this Memory': {
+          const title = draft.title || 'Untitled'
+          const desc = draft.description || inputText.split('\n').slice(1).join(' ').replace(/^(Description|Location):\s*/i, '').trim() || undefined
+          const loc = draft.location || undefined
+          generated = await generateMemorySummary(title, desc, loc, draft.date || undefined)
+          break
+        }
+        case 'Suggest Tags': {
+          const title = draft.title || 'Untitled'
+          const desc = draft.description || inputText.split('\n').slice(1).join(' ').replace(/^(Description|Location):\s*/i, '').trim() || undefined
+          const loc = draft.location || undefined
+          const tags = await generateTags(title, desc, loc)
+          generated = tags.map(t => `#${t}`).join('  ')
+          break
+        }
+        case 'Detect Mood': {
+          const title = draft.title || 'Untitled'
+          const desc = draft.description || inputText.split('\n').slice(1).join(' ').replace(/^Description:\s*/i, '').trim() || undefined
+          generated = await generateMoodInsight(title, desc, draft.mood)
+          break
+        }
+        case 'Summarize Voice Note': {
+          const transcript = inputText || draft.description || 'A voice recording'
+          generated = await generateMemorySummary(
+            draft.title || 'Voice Note',
+            transcript,
+            draft.location || undefined,
+            draft.date || undefined,
+          )
+          break
+        }
+      }
+
+      setResult(Array.isArray(generated) ? generated.join(', ') : generated)
+    } catch {
+      setResult('Something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [activeAction, draft, inputText])
+
+  const handleClose = useCallback(() => {
+    setModalOpen(false)
   }, [])
+
+  const textareaPlaceholder = (): string => {
+    switch (activeAction) {
+      case 'Generate Story':
+        return 'Enter one chapter per line...\ne.g.\nFirst Meeting\nOur Favorite Cafe\nThe Goodbye'
+      case 'Summarize Voice Note':
+        return 'Paste your voice note transcript here...'
+      default:
+        return 'Edit the context for the AI...'
+    }
+  }
+
+  const panelTitle = (): string => {
+    const action = actions.find(a => a.label === activeAction)
+    return action ? `${action.icon} ${activeAction}` : 'AI Memory Assistant'
+  }
 
   return (
     <>
@@ -76,7 +207,6 @@ export default function AIMemoryAssistant() {
         whileHover={{ y: -2 }}
       >
         <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/[0.02] pointer-events-none" />
-        {/* Glass reflection overlay */}
         <div
           className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"
           style={{
@@ -84,7 +214,6 @@ export default function AIMemoryAssistant() {
           }}
         />
 
-        {/* Inner ambient glow */}
         <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full opacity-[0.04] pointer-events-none"
           style={{
             background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
@@ -93,9 +222,7 @@ export default function AIMemoryAssistant() {
         />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start gap-6">
-          {/* ─── Left: Header + Button Grid ─── */}
           <div className="flex-1 w-full space-y-5">
-            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-neonPink/20 to-neonPurple/20 border border-neonPink/30 flex items-center justify-center shadow-[0_0_12px_rgba(255,75,145,0.2)]">
                 <span className="text-sm">✨</span>
@@ -103,7 +230,6 @@ export default function AIMemoryAssistant() {
               <span className="text-sm font-medium text-white">AI Memory Assistant</span>
             </div>
 
-            {/* Action Button Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
               {actions.map((action) => (
                 <motion.button
@@ -114,7 +240,6 @@ export default function AIMemoryAssistant() {
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 18 }}
                 >
-                  {/* Hover bloom */}
                   <motion.div
                     className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 pointer-events-none"
                     style={{
@@ -122,14 +247,12 @@ export default function AIMemoryAssistant() {
                     }}
                   />
 
-                  {/* Glass shimmer on hover */}
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500 pointer-events-none"
                     style={{
                       background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.03) 50%, transparent 70%)',
                     }}
                   />
 
-                  {/* Border glow on hover */}
                   <div className="absolute inset-0 rounded-2xl border border-transparent group-hover/btn:border-neonPink/20 transition-all duration-300 pointer-events-none" />
 
                   <span className="relative z-10 flex items-center gap-2.5">
@@ -144,9 +267,7 @@ export default function AIMemoryAssistant() {
             </div>
           </div>
 
-          {/* ─── Right: AI Orb ─── */}
           <div className="flex-shrink-0 w-28 h-28 md:w-32 md:h-32 relative mx-auto md:mx-0 md:mt-8">
-            {/* Outer glow */}
             <motion.div
               className="absolute inset-[-10px] rounded-full blur-xl pointer-events-none"
               style={{
@@ -156,7 +277,6 @@ export default function AIMemoryAssistant() {
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             />
 
-            {/* Orbiting ring 1 */}
             <motion.div
               className="absolute inset-[-6px] rounded-full border pointer-events-none"
               style={{
@@ -167,7 +287,6 @@ export default function AIMemoryAssistant() {
               transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
             />
 
-            {/* Orbiting ring 2 (dashed) */}
             <motion.div
               className="absolute inset-[-12px] rounded-full pointer-events-none"
               style={{
@@ -177,7 +296,6 @@ export default function AIMemoryAssistant() {
               transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
             />
 
-            {/* Orbiting ring 3 (partial) */}
             <motion.div
               className="absolute inset-[-18px] rounded-full pointer-events-none"
               style={{
@@ -188,7 +306,6 @@ export default function AIMemoryAssistant() {
               transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
             />
 
-            {/* Conic gradient ring */}
             <motion.div
               className="absolute inset-0 rounded-full pointer-events-none"
               style={{
@@ -200,7 +317,6 @@ export default function AIMemoryAssistant() {
               transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
             />
 
-            {/* Core sphere */}
             <motion.div
               className="absolute inset-[15%] rounded-full flex items-center justify-center overflow-hidden"
               style={{
@@ -217,7 +333,6 @@ export default function AIMemoryAssistant() {
               }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              {/* Inner nebula swirl */}
               <motion.div
                 className="absolute inset-[-50%] rounded-full"
                 style={{
@@ -227,7 +342,6 @@ export default function AIMemoryAssistant() {
                 transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
               />
 
-              {/* Glass reflection on core */}
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -235,13 +349,11 @@ export default function AIMemoryAssistant() {
                 }}
               />
 
-              {/* AI text */}
               <span className="relative z-10 text-[10px] font-extrabold text-white/90 tracking-wider drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">
                 AI
               </span>
             </motion.div>
 
-            {/* Orbiting star particles */}
             {starParticles.map((p, i) => (
               <motion.div
                 key={`star-${i}`}
@@ -269,7 +381,6 @@ export default function AIMemoryAssistant() {
               />
             ))}
 
-            {/* Floating particles */}
             {orbParticles.map((p, i) => (
               <motion.div
                 key={`orb-${i}`}
@@ -311,7 +422,6 @@ export default function AIMemoryAssistant() {
         </div>
       </motion.div>
 
-      {/* ─── Modal ─── */}
       <AnimatePresence>
         {modalOpen && (
           <motion.div
@@ -321,22 +431,19 @@ export default function AIMemoryAssistant() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            {/* Backdrop */}
             <motion.div
               className="absolute inset-0 bg-black/15 backdrop-blur-sm"
-              onClick={() => setModalOpen(false)}
+              onClick={handleClose}
             />
 
-            {/* Modal panel */}
             <motion.div
-              className="relative w-full max-w-md rounded-3xl border border-white/10 p-8 shadow-2xl overflow-hidden"
+              className="relative w-full max-w-lg rounded-3xl border border-white/10 p-8 shadow-2xl overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)' }}
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* Ambient glow */}
               <div
                 className="absolute -top-20 -left-20 w-48 h-48 rounded-full opacity-20 pointer-events-none"
                 style={{
@@ -346,7 +453,6 @@ export default function AIMemoryAssistant() {
               />
 
               <div className="relative z-10 flex flex-col items-center text-center gap-5">
-                {/* Animated AI orb (small) */}
                 <div className="w-20 h-20 relative">
                   <motion.div
                     className="absolute inset-[-6px] rounded-full border pointer-events-none"
@@ -391,26 +497,90 @@ export default function AIMemoryAssistant() {
                   </motion.div>
                 </div>
 
-                {/* Content */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-white">
-                    ✨ Coming Soon
-                  </h3>
-                  <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
-                    The AI Memory Assistant is currently being crafted. Soon you&apos;ll be able to generate
-                    captions, stories, descriptions, mood insights, tags, and summaries directly from your memories.
-                  </p>
-                </div>
+                <div className="w-full space-y-3 text-left">
+                  <h3 className="text-lg font-bold text-white text-center">{panelTitle()}</h3>
 
-                {/* Got it button */}
-                <motion.button
-                  onClick={() => setModalOpen(false)}
-                  className="mt-2 px-8 py-3 rounded-2xl text-sm font-semibold text-white border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-white/20 transition-all duration-300"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  Got it
-                </motion.button>
+                  {isLoading && (
+                    <div className="flex flex-col items-center gap-3 py-6">
+                      <motion.div
+                        className="w-8 h-8 rounded-full border-2 border-neonPink/30 border-t-neonPink"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                      />
+                      <p className="text-sm text-gray-400">Generating...</p>
+                    </div>
+                  )}
+
+                  {!isLoading && showInput && (
+                    <>
+                      <textarea
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder={textareaPlaceholder()}
+                        rows={needsUserInput(activeAction) ? 4 : 3}
+                        className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all duration-300 border border-white/[0.06] focus:border-neonPink/50 focus:ring-[2px] focus:ring-neonPink/20 resize-none"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)',
+                        }}
+                      />
+                      <motion.button
+                        onClick={handleGenerate}
+                        className="w-full px-8 py-3 rounded-2xl text-sm font-semibold text-white border border-neonPink/30 bg-neonPink/10 backdrop-blur-md hover:bg-neonPink/20 hover:border-neonPink/50 transition-all duration-300"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        Generate
+                      </motion.button>
+                    </>
+                  )}
+
+                  {!isLoading && !showInput && result !== null && (
+                    <div className="space-y-3">
+                      <div
+                        className="rounded-xl px-4 py-4 text-sm text-white/90 leading-relaxed border border-white/[0.06]"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        {result}
+                      </div>
+                      <div className="flex gap-2">
+                        <motion.button
+                          onClick={() => { setShowInput(true); setResult(null); setInputText(defaultInputForAction(activeAction)) }}
+                          className="flex-1 px-6 py-3 rounded-2xl text-sm font-semibold text-gray-300 border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-white/20 transition-all duration-300"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          Regenerate
+                        </motion.button>
+                        <motion.button
+                          onClick={handleClose}
+                          className="flex-1 px-6 py-3 rounded-2xl text-sm font-semibold text-white border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-white/20 transition-all duration-300"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          Close
+                        </motion.button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isLoading && !showInput && result === null && (
+                    <motion.button
+                      onClick={() => setShowInput(true)}
+                      className="w-full px-8 py-3 rounded-2xl text-sm font-semibold text-white border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 hover:border-white/20 transition-all duration-300"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      Back
+                    </motion.button>
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
